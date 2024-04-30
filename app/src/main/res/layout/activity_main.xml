@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/Theme.Capybara_AJ.AppBarOverlay">
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:popupTheme="@style/Theme.Capybara_AJ.PopupOverlay" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+            <LinearLayout
+                app:layout_behavior="@string/appbar_scrolling_view_behavior"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="14dp"
+                android:background="@color/darkblue"
+                android:orientation="horizontal" >
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/dirname"
+                        android:textColor="@color/white"
+                        android:layout_gravity="left"
+                        android:textSize="16dip"
+                        android:layout_weight="1"
+                        />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/videoname"
+                        android:textColor="@color/white"
+                        android:layout_gravity="left"
+                        android:textSize="16dip"
+                        android:layout_weight="6"
+                        />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/sbtinfo"
+                        android:textColor="@color/white"
+                        android:layout_gravity="right"
+                        android:textSize="16dip"
+                        android:layout_weight="1"
+                        />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/recsum"
+                        android:textColor="@color/white"
+                        android:layout_gravity="right"
+                        android:textSize="16dip"
+                        android:layout_weight="1"
+                        />
+            </LinearLayout>
+            <SurfaceView
+                android:id="@+id/videosfc"
+                android:layout_width="fill_parent"
+                android:layout_height="220dp" />
+            <ProgressBar style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="4dp"
+                android:id="@+id/Progressbar"/>
+            <ListView
+                android:id="@+id/subtitlelist"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical" />
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/open"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="240dp"
+        android:layout_marginEnd="12dp"
+        app:srcCompat="@drawable/folder_open"
+        app:fabCustomSize="40dp" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
