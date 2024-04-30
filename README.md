@@ -12,4 +12,4 @@ To use it, install the app on your phone first, then create a fold in SD card
 root directory named "CPBRs", put the video file and srt file in it(they have to have
 the same base name), then click the Floating Action Button(yellow one in the picture).
 
-![snapshot](Screenshot.jpg)
+![snapshot](snapshot.jpg)
