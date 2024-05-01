@@ -53,7 +53,6 @@ public class VideoPlayer implements SurfaceHolder.Callback,
                 mPlayer = null;
             }
 
-            Log.e(TAG, "returns: " + videopath);
             Uri playUri = Uri.parse(videopath);
             mPlayer = MediaPlayer.create(main, playUri);
 

@@ -64,16 +64,17 @@ public class FileUtils {
                     String videoDir = file.toString().substring(0, file.toString().lastIndexOf('/') + 1);
                     String videoSubdir = videoDir.substring(videoDir.lastIndexOf(RootDirName) + RootDirName.length() + 1, videoDir.length());
                     String videoName = file.toString().substring(file.toString().lastIndexOf('/') + 1, file.toString().length());
-                    if ( videoName.endsWith(".mp4") || videoName.endsWith(".mkv") ||
+                    if (videoName.endsWith(".mp4") || videoName.endsWith(".mkv") ||
                             videoName.endsWith(".avi") || videoName.endsWith(".webm")) {
 
                         String basename = videoName.substring(0, videoName.lastIndexOf('.'));
 
                         String sbtName = null;
                         String t;
+                        File sf = null;
 
                         t = basename + ".srt";
-                        File sf = new File(videoDir + t);
+                        sf = new File(videoDir + t);
                         if (sf.exists()) {
                             sbtName = t;
                         }

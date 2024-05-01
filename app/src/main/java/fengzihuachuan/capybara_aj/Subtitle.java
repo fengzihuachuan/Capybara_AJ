@@ -63,8 +63,6 @@ public class Subtitle {
             return null;
         } else {
             for (Integer key : currTto.captions.keySet()) {
-                //Log.d(TAG, "key: " + key);
-                //Log.d(TAG, "value: " + tto.captions.get(key));
                 currTto.captions.get(key).content = currTto.captions.get(key).content.replaceAll("<[^>]+>", ""); //删除html标签
                 ListItem i = new ListItem(key, currTto.captions.get(key).start, currTto.captions.get(key).content, currTto.captions.get(key).end);
                 subtitleList.add(i);
