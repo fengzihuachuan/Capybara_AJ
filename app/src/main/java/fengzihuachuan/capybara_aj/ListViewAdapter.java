@@ -96,10 +96,11 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 setRecButtons(RECBTN_RECORDING);
                 isRecording = true;
             } else if (msg.what == MSGTYPE_RECSTOP) {
+                FileUtils.setCurrInfo(FileUtils.SET_RECEXIST, msg.arg1);
                 resetRecButtons();
                 isRecording = false;
-                FileUtils.setCurrInfo(FileUtils.SET_RECEXIST, msg.arg1);
                 ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.currRecSum()+"");
+                currentView.subcontent.setTextColor(context.getColor(R.color.green));
             } else if (msg.what == MSGTYPE_PROGRESS) {
                 if (msg.arg1 >= 999) {
                     currentView.progressBar.setVisibility(View.INVISIBLE);
@@ -262,7 +263,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 setRecButtons(RECBTN_DISABLE);
 
                 ListItem i = Subtitle.get(selectIdx);
-                int period = i.getSubEnd().getMseconds() - i.getSubStart().getMseconds() + 500;
+                int period = i.getSubEnd().getMseconds() - i.getSubStart().getMseconds() + 400;
                 AudioRecorder.start(selectIdx, period);
             } else {
                 AudioRecorder.stop();
