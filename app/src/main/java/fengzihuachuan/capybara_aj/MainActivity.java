@@ -48,10 +48,6 @@ public class MainActivity extends AppCompatActivity {
 
     public VideoPlayer videoPlayer = null;
 
-    static SharedPreferences sharedPref = null;
-    public String lastVideo;
-    public int lastPos;
-
     public static int MAINMSG_SCREEN = 0;
     public static int MAINMSG_PLAYER = 1;
 
@@ -68,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void init() {
+        Preferences.init(this);
         videoPlayer = new VideoPlayer();
         FileUtils.init();
         resumeLast();
@@ -156,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < FileUtils.size(); i++) {
                 int sbtrec = FileUtils.getRecSum(i);
                 int sbtsum = FileUtils.get(i).recList.length;
-                String t = sbtrec + "/" + sbtsum + "  -  " + FileUtils.get(i).videoName + "\n" + FileUtils.get(i).videoSubDir;
+                String t = sbtrec + "/" + sbtsum + "  -  " + FileUtils.get(i).baseName + "\n" + FileUtils.get(i).videoSubDir;
                 filesShow[i] = t.substring(0, Math.min(t.length(), 64)) + "...";
             }
 
@@ -175,12 +172,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void resumeLast() {
-        sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-        lastVideo = sharedPref.getString("lastVideo", null);
-        lastPos = sharedPref.getInt("lastPos", 0);
-        Log.i(TAG, "lastVideo == " + lastVideo);
-
-        int ret = loadCurrent(lastVideo, -1, lastPos);
+        int ret = loadCurrent(Preferences.getLastVideo(), -1, Preferences.getLastPos());
         if (ret != 0) {
             Log.i(TAG, "resumeLast NULL ");
         }
@@ -199,9 +191,7 @@ public class MainActivity extends AppCompatActivity {
             return -1;
 
         ((TextView)findViewById(R.id.dirname)).setText(FileUtils.get(id).videoSubDir);
-
-        String t = videoName.substring(0, Math.min(videoName.length(), 36));
-        ((TextView)findViewById(R.id.videoname)).setText(t);
+        ((TextView)findViewById(R.id.baseName)).setText(FileUtils.get(id).baseName);
 
         AudioRecorder.init(MainActivity.this);
         AudioPlayer.init(MainActivity.this);
@@ -213,11 +203,7 @@ public class MainActivity extends AppCompatActivity {
         msg.arg1 = pos;
         ListViewAdapter.listHandler.sendMessage(msg);
 
-        if (sharedPref != null) {
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putString("lastVideo", videoName);
-            editor.apply();
-        }
+        Preferences.setLastVideo(videoName);
         return 0;
     }
 

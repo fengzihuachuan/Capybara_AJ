@@ -71,11 +71,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 ((TextView)context.findViewById(R.id.sbtinfo)).setText((msg.arg1 + 1) + "/" + Subtitle.size());
                 ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.currRecSum()+"");
 
-                if (MainActivity.sharedPref != null) {
-                    SharedPreferences.Editor editor = MainActivity.sharedPref.edit();
-                    editor.putInt("lastPos", msg.arg1);
-                    editor.apply();
-                }
+                Preferences.setLastPos(msg.arg1);
             } else if (msg.what == MSGTYPE_VIDEOSTART) {
                 if (msg.arg1 == VideoPlayer.PLAYMODE_PART_COMBINE) {
                     setRecButtons(RECBTN_COMPAREING);

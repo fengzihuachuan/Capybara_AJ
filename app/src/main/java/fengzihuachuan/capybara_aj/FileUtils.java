@@ -67,25 +67,25 @@ public class FileUtils {
                     if (videoName.endsWith(".mp4") || videoName.endsWith(".mkv") ||
                             videoName.endsWith(".avi") || videoName.endsWith(".webm")) {
 
-                        String basename = videoName.substring(0, videoName.lastIndexOf('.'));
+                        String baseName = videoName.substring(0, videoName.lastIndexOf('.'));
 
                         String sbtName = null;
                         String t;
                         File sf = null;
 
-                        t = basename + ".srt";
+                        t = baseName + ".srt";
                         sf = new File(videoDir + t);
                         if (sf.exists()) {
                             sbtName = t;
                         }
 
-                        t = basename + ".ass";
+                        t = baseName + ".ass";
                         sf = new File(videoDir + t);
                         if (sf.exists()) {
                             sbtName = t;
                         }
 
-                        unsortflist.add(new FilesInfo(videoDir, videoSubdir, videoName, sbtName, getVideoRecInfo(videoDir + sbtName, videoName)));
+                        unsortflist.add(new FilesInfo(videoDir, videoSubdir, baseName, videoName, sbtName, getVideoRecInfo(videoDir + sbtName, videoName)));
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -144,7 +144,7 @@ public class FileUtils {
     }
 
     private static ArrayList<FilesInfo> sortList(ArrayList<FilesInfo> unsortlist) {
-        unsortlist.sort(Comparator.comparing(FilesInfo::getVideoDir).thenComparing(FilesInfo::getVideoName));
+        unsortlist.sort(Comparator.comparing(FilesInfo::getVideoDir).thenComparing(FilesInfo::getBaseName));
         return unsortlist;
     }
 
@@ -226,13 +226,15 @@ public class FileUtils {
     static public class FilesInfo {
         String videoDir;
         String videoSubDir;
+        String baseName;
         String videoName;
         String sbtName;
         boolean[] recList;
 
-        FilesInfo(String vd, String vsd, String v, String s, boolean[] rl) {
+        FilesInfo(String vd, String vsd, String b, String v, String s, boolean[] rl) {
             videoDir = vd;
             videoSubDir = vsd;
+            baseName = b;
             videoName = v;
             sbtName = s;
             recList = rl;
@@ -242,8 +244,8 @@ public class FileUtils {
             return videoDir;
         }
 
-        String getVideoName() {
-            return videoName;
+        String getBaseName() {
+            return baseName;
         }
     }
 }
