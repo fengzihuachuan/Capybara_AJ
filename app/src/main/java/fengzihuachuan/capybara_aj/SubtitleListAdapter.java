@@ -20,40 +20,31 @@ import androidx.appcompat.widget.LinearLayoutCompat;
 import java.util.List;
 
 
-public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
+public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
     static String TAG = "ListViewAdapter";
 
     private int resourceId;
 
     private static int selectIdx = -1;
     private static MainActivity context;
-    private static ListViewAdapter listViewAdapter;
+    private static SubtitleListAdapter subtitleListAdapter;
     private static ListView listView;
     private static VideoPlayer videoPlayer;
 
     private static ViewHolder currentView;
 
-    private static boolean isRecording = false;
-    private static boolean disableCurrSub = false;
+    public static final int MSGTYPE_PROCSTOP = 2;
+    public static final int MSGTYPE_RECSTOP = 3;
+    public static final int MSGTYPE_PROGRESS = 4;
 
-    public static int MSGTYPE_SELECT = 0;
-    public static int MSGTYPE_VIDEOSTART = 1;
-    public static int MSGTYPE_VIDEOSTOP = 2;
-    public static int MSGTYPE_REPLAYSTART = 3;
-    public static int MSGTYPE_REPLAYSTOP = 4;
-    public static int MSGTYPE_RECSTART = 5;
-    public static int MSGTYPE_RECSTOP = 6;
-    public static int MSGTYPE_PROGRESS = 7;
-    public static int MSGTYPE_WORKMODE = 8;
+    private static final int STATUS_NOTHING = 0;
+    private static final int STATUS_PLAYING = 1;
+    private static final int STATUS_RECORDING = 2;
+    private static final int STATUS_REPLAYING = 3;
+    private static final int STATUS_COMPAREING = 4;
+    private static int currentStatus;
 
-    public static int RECBTN_DISABLE = 0;
-    public static int RECBTN_HAVEREC = 1;
-    public static int RECBTN_NOREC = 2;
-    public static int RECBTN_RECORDING = 3;
-    public static int RECBTN_REPLAYING = 4;
-    public static int RECBTN_COMPAREING = 5;
-
-    public ListViewAdapter(Context ctx, int resourceId1, List<SubtitleItem> subtitleItems) {
+    public SubtitleListAdapter(Context ctx, int resourceId1, List<SubtitleItem> subtitleItems) {
         super(context, resourceId1, subtitleItems);
         resourceId = resourceId1;
     }
@@ -61,40 +52,10 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
     public static Handler listHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what == MSGTYPE_SELECT) {
-                selectIdx = msg.arg1;
-
-                listView.setSelection(msg.arg1 - 2);
-                listViewAdapter.setSelectItem(msg.arg1);
-                listViewAdapter.notifyDataSetInvalidated();
-
-                ((TextView)context.findViewById(R.id.sbtinfo)).setText((msg.arg1 + 1) + "/" + Subtitle.size());
-                ((TextView)context.findViewById(R.id.recsum)).setText(Subtitle.getRecSum()+"");
-
-                Preferences.set(msg.arg1);
-            } else if (msg.what == MSGTYPE_VIDEOSTART) {
-                if (msg.arg1 == 1) {
-                    setRecButtons(RECBTN_COMPAREING);
-                } else {
-                    setRecButtons(RECBTN_DISABLE);
-                }
-            } else if (msg.what == MSGTYPE_VIDEOSTOP) {
-                if (msg.arg1 == 1) {
-                    AudioPlayer.replay(selectIdx);
-                } else {
-                    resetRecButtons();
-                }
-            } else if (msg.what == MSGTYPE_REPLAYSTART) {
-
-            } else if (msg.what == MSGTYPE_REPLAYSTOP) {
-                resetRecButtons();
-            } else if (msg.what == MSGTYPE_RECSTART) {
-                setRecButtons(RECBTN_RECORDING);
-                isRecording = true;
+            if (msg.what == MSGTYPE_PROCSTOP) {
+                updateStatus(STATUS_NOTHING);
             } else if (msg.what == MSGTYPE_RECSTOP) {
-                Subtitle.setRecExist(msg.arg1, true);
-                resetRecButtons();
-                isRecording = false;
+                Subtitle.get(msg.arg1).setRecExist(true);
                 ((TextView)context.findViewById(R.id.recsum)).setText(Subtitle.getRecSum()+"");
                 currentView.subcontent.setTextColor(context.getColor(R.color.green));
                 Preferences.set(FileUtils.getCurrInfo(FileUtils.GET_BASENAME), Subtitle.getRecSum(), Subtitle.size());
@@ -105,21 +66,9 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
                     currentView.progressBar.setVisibility(View.VISIBLE);
                     currentView.progressBar.setProgress(msg.arg1/10);
                 }
-            } else if (msg.what == MSGTYPE_WORKMODE) {
-                if (msg.arg1 == context.WORKMODE_REPEAT) {
-                    currentView.recordlyt.setVisibility(View.VISIBLE);
-                    resetRecButtons();
-                } else {
-                    currentView.recordlyt.setVisibility(View.GONE);
-                }
-                videoPlayer.pause();
             }
         }
     };
-
-    public void setSelectItem(int s) {
-        this.selectIdx = s;
-    }
 
     static void initSubtitle(Context ctx, ListView lv, VideoPlayer vp) {
         context = (MainActivity)ctx;
@@ -132,44 +81,66 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
     }
 
     static void refreshSubtitle() {
-        listViewAdapter = new ListViewAdapter(context, R.layout.subtitle_item, Subtitle.list());
-        listView.setAdapter(listViewAdapter);
+        subtitleListAdapter = new SubtitleListAdapter(context, R.layout.subtitle_item, Subtitle.list());
+        listView.setAdapter(subtitleListAdapter);
         listView.setOnItemClickListener(itemClickListener);
+    }
+
+    public static void subtitleSelected(int pos) {
+        selectIdx = pos;
+
+        listView.setSelection(pos - 2);
+        subtitleListAdapter.notifyDataSetInvalidated();
+
+        ((TextView)context.findViewById(R.id.sbtinfo)).setText((pos + 1) + "/" + Subtitle.size());
+        ((TextView)context.findViewById(R.id.recsum)).setText(Subtitle.getRecSum()+"");
+
+        Preferences.set(pos);
+    }
+
+    public static void workmodeChange() {
+        videoPlayer.pause();
+        AudioPlayer.stop();
+
+        if (context.currentWorkMode == context.WORKMODE_REPEAT) {
+            currentView.recordlyt.setVisibility(View.VISIBLE);
+            updateStatus(STATUS_NOTHING);
+        } else {
+            currentView.recordlyt.setVisibility(View.GONE);
+        }
     }
 
     private static AdapterView.OnItemClickListener itemClickListener = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            if (selectIdx != position) {
-                Message msg = new Message();
-                msg.what = ListViewAdapter.MSGTYPE_SELECT;
-                msg.arg1 = position;
-                ListViewAdapter.listHandler.sendMessage(msg);
-            } else {
-                if (!disableCurrSub) {
-                    SubtitleItem i = Subtitle.get(selectIdx);
-                    if (context.currentWorkMode == context.WORKMODE_REPEAT) {
-                        videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds(), false);
-                    } else {
-                        videoPlayer.play(i.getSubStart().getMseconds(), -1, false);
-                    }
+            if (currentStatus == STATUS_NOTHING) {
+                subtitleSelected(position);
+
+                updateStatus(STATUS_PLAYING);
+                SubtitleItem i = Subtitle.get(selectIdx);
+                if (context.currentWorkMode == context.WORKMODE_REPEAT) {
+                    videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds());
+                } else {
+                    videoPlayer.play(i.getSubStart().getMseconds(), -1);
                 }
             }
         }
     };
 
     static void playUpdate(int currentpos) {
-        if (currentpos > Subtitle.get(selectIdx).getSubEnd().getMseconds()) {
-            Message msg = new Message();
-            msg.what = ListViewAdapter.MSGTYPE_SELECT;
-            msg.arg1 = selectIdx + 1;
-            ListViewAdapter.listHandler.sendMessage(msg);
-            selectIdx = selectIdx + 1;
-        }
         Message msg = new Message();
         msg.what = MainActivity.MAINMSG_PLAYER;
         msg.arg1 = currentpos;
         context.mainHandler.sendMessage(msg);
+
+        if (Subtitle.get(selectIdx+1) == null) {
+            return;
+        } else {
+            if (currentpos > Subtitle.get(selectIdx).getSubEnd().getMseconds()) {
+                subtitleSelected(selectIdx);
+                selectIdx = selectIdx + 1;
+            }
+        }
     }
 
     @Override
@@ -221,7 +192,6 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
 
             if (context.currentWorkMode == context.WORKMODE_REPEAT) {
                 viewHolder.recordlyt.setVisibility(View.VISIBLE);
-                resetRecButtons();
             }
         } else {
             viewHolder.timelyt.setVisibility(View.GONE);
@@ -247,16 +217,17 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
     private View.OnClickListener compareBntOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            setRecButtons(RECBTN_COMPAREING);
+            updateStatus(STATUS_COMPAREING);
             SubtitleItem i = Subtitle.get(selectIdx);
-            videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds(), true);
+            AudioPlayer.replay(selectIdx);
+            videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds());
         }
     };
 
     private View.OnClickListener replayBntOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            setRecButtons(RECBTN_REPLAYING);
+            updateStatus(STATUS_REPLAYING);
             AudioPlayer.replay(selectIdx);
         }
     };
@@ -264,8 +235,8 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
     private View.OnClickListener recordBntOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            if (isRecording == false) {
-                setRecButtons(RECBTN_DISABLE);
+            if (currentStatus == STATUS_NOTHING) {
+                updateStatus(STATUS_RECORDING);
 
                 SubtitleItem i = Subtitle.get(selectIdx);
                 int period = i.getSubEnd().getMseconds() - i.getSubStart().getMseconds() + 400;
@@ -276,56 +247,50 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
         }
     };
 
-    private static void resetRecButtons() {
-        if (Subtitle.get(selectIdx).getRecExist()) {
-            setRecButtons(RECBTN_HAVEREC);
-        } else {
-            setRecButtons(RECBTN_NOREC);
-        }
-    }
+    private static void updateStatus(int s) {
+        currentStatus = s;
 
-    private static void setRecButtons(int type) {
-        if (type == RECBTN_DISABLE) {
+        Log.e(TAG, "updateStatus = " + s);
+
+        if (s == STATUS_NOTHING) {
+            if (Subtitle.get(selectIdx).getRecExist()) {
+                currentView.compareBnt.setImageResource(R.drawable.compare_available);
+                currentView.compareBnt.setEnabled(true);
+                currentView.replayBnt.setImageResource(R.drawable.replay_available);
+                currentView.replayBnt.setEnabled(true);
+                currentView.recordBnt.setImageResource(R.drawable.record_available);
+                currentView.recordBnt.setEnabled(true);
+            } else {
+                currentView.compareBnt.setImageResource(R.drawable.compare_disable);
+                currentView.compareBnt.setEnabled(false);
+                currentView.replayBnt.setImageResource(R.drawable.replay_disable);
+                currentView.replayBnt.setEnabled(false);
+                currentView.recordBnt.setImageResource(R.drawable.record_available);
+                currentView.recordBnt.setEnabled(true);
+            }
+        } else if (s == STATUS_PLAYING) {
+            Log.e(TAG, "updateStatus = STATUS_PLAYING");
             currentView.compareBnt.setImageResource(R.drawable.compare_disable);
             currentView.compareBnt.setEnabled(false);
             currentView.replayBnt.setImageResource(R.drawable.replay_disable);
             currentView.replayBnt.setEnabled(false);
             currentView.recordBnt.setImageResource(R.drawable.record_disable);
             currentView.recordBnt.setEnabled(false);
-        } else if (type == RECBTN_HAVEREC) {
-            disableCurrSub = false;
-            currentView.compareBnt.setImageResource(R.drawable.compare_available);
-            currentView.compareBnt.setEnabled(true);
-            currentView.replayBnt.setImageResource(R.drawable.replay_available);
-            currentView.replayBnt.setEnabled(true);
-            currentView.recordBnt.setImageResource(R.drawable.record_available);
-            currentView.recordBnt.setEnabled(true);
-        } else if (type == RECBTN_NOREC) {
-            disableCurrSub = false;
-            currentView.compareBnt.setImageResource(R.drawable.compare_disable);
-            currentView.compareBnt.setEnabled(false);
-            currentView.replayBnt.setImageResource(R.drawable.replay_disable);
-            currentView.replayBnt.setEnabled(false);
-            currentView.recordBnt.setImageResource(R.drawable.record_available);
-            currentView.recordBnt.setEnabled(true);
-        } else if (type == RECBTN_RECORDING) {
-            disableCurrSub = true;
+        }  else if (s == STATUS_RECORDING) {
             currentView.compareBnt.setImageResource(R.drawable.compare_disable);
             currentView.compareBnt.setEnabled(false);
             currentView.replayBnt.setImageResource(R.drawable.replay_disable);
             currentView.replayBnt.setEnabled(false);
             currentView.recordBnt.setImageResource(R.drawable.stop_avaiable);
             currentView.recordBnt.setEnabled(true);
-        } else if (type == RECBTN_REPLAYING) {
-            disableCurrSub = true;
+        } else if (s == STATUS_REPLAYING) {
             currentView.compareBnt.setImageResource(R.drawable.compare_disable);
             currentView.compareBnt.setEnabled(false);
             currentView.replayBnt.setImageResource(R.drawable.replay_active);
             currentView.replayBnt.setEnabled(false);
             currentView.recordBnt.setImageResource(R.drawable.record_disable);
             currentView.recordBnt.setEnabled(false);
-        } else if (type == RECBTN_COMPAREING) {
-            disableCurrSub = true;
+        } else if (s == STATUS_COMPAREING) {
             currentView.compareBnt.setImageResource(R.drawable.compare_active);
             currentView.compareBnt.setEnabled(false);
             currentView.replayBnt.setImageResource(R.drawable.replay_disable);
@@ -333,7 +298,7 @@ public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
             currentView.recordBnt.setImageResource(R.drawable.record_disable);
             currentView.recordBnt.setEnabled(false);
         } else {
-            Log.e(TAG, "unknow type.");
+            Log.e(TAG, "unknow status.");
         }
     }
 

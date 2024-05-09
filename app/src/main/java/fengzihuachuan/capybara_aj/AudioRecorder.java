@@ -26,43 +26,7 @@ public class AudioRecorder {
 
     public static void start(int sbtidx, int period) {
         recSbtId = sbtidx;
-        _start();
 
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Log.d(TAG, "Thread: ");
-
-                    isRecording = true;
-                    long start = System.currentTimeMillis();
-                    while (isRecording) {
-                        if (System.currentTimeMillis() - start > period) {
-                            Message msg = new Message();
-                            msg.what = ListViewAdapter.MSGTYPE_PROGRESS;
-                            msg.arg1 = (int) (1000);
-                            ListViewAdapter.listHandler.sendMessage(msg);
-                            isRecording = false;
-                            break;
-                        } else {
-                            Message msg = new Message();
-                            msg.what = ListViewAdapter.MSGTYPE_PROGRESS;
-                            msg.arg1 = (int) ((System.currentTimeMillis() - start) * 1000 / period);
-                            ListViewAdapter.listHandler.sendMessage(msg);
-
-                            sleep(100);
-                        }
-                    }
-
-                    AudioRecorder._stop();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-    }
-
-    private static void _start() {
         mMediaRecorder = new MediaRecorder();
 
         try {
@@ -77,9 +41,38 @@ public class AudioRecorder {
             AudioPlayer.playBeep(0);
             mMediaRecorder.start();
 
-            Message msg = new Message();
-            msg.what = ListViewAdapter.MSGTYPE_RECSTART;
-            ListViewAdapter.listHandler.sendMessage(msg);
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        Log.d(TAG, "Thread: ");
+
+                        isRecording = true;
+                        long start = System.currentTimeMillis();
+                        while (isRecording) {
+                            if (System.currentTimeMillis() - start > period) {
+                                Message msg = new Message();
+                                msg.what = SubtitleListAdapter.MSGTYPE_PROGRESS;
+                                msg.arg1 = (int) (1000);
+                                SubtitleListAdapter.listHandler.sendMessage(msg);
+                                isRecording = false;
+                                break;
+                            } else {
+                                Message msg = new Message();
+                                msg.what = SubtitleListAdapter.MSGTYPE_PROGRESS;
+                                msg.arg1 = (int) ((System.currentTimeMillis() - start) * 1000 / period);
+                                SubtitleListAdapter.listHandler.sendMessage(msg);
+
+                                sleep(100);
+                            }
+                        }
+
+                        AudioRecorder._stop();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
         } catch (IllegalStateException e) {
             Log.d(TAG, "record failed!" + e.getMessage());
         } catch (IOException e) {
@@ -109,8 +102,13 @@ public class AudioRecorder {
         mMediaRecorder = null;
 
         Message msg = new Message();
-        msg.what = ListViewAdapter.MSGTYPE_RECSTOP;
+        msg.what = SubtitleListAdapter.MSGTYPE_RECSTOP;
         msg.arg1 = recSbtId;
-        ListViewAdapter.listHandler.sendMessage(msg);
+        SubtitleListAdapter.listHandler.sendMessage(msg);
+
+        msg = new Message();
+        msg.what = SubtitleListAdapter.MSGTYPE_PROCSTOP;
+        msg.arg1 = recSbtId;
+        SubtitleListAdapter.listHandler.sendMessage(msg);
     }
 }

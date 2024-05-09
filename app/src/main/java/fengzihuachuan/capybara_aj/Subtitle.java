@@ -73,7 +73,10 @@ public class Subtitle {
     }
 
     static SubtitleItem get(int id) {
-        return subtitleList.get(id);
+        if (id < subtitleList.size())
+            return subtitleList.get(id);
+        else
+            return null;
     }
 
     static int size() {
@@ -88,9 +91,5 @@ public class Subtitle {
             }
         }
         return count;
-    }
-
-    static void setRecExist(int id, boolean exist) {
-        subtitleList.get(id).setRecExist(exist);
     }
 }

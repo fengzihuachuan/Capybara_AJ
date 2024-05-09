@@ -1,7 +1,6 @@
 package fengzihuachuan.capybara_aj;
 
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
@@ -39,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     public static int MAINMSG_SCREEN = 0;
     public static int MAINMSG_PLAYER = 1;
     public static int PROGRESS_DISMISS = 2;
+    public static int CANNOT_DUB = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         if (videoPlayer != null) {
-            videoPlayer.release();
+            videoPlayer.reset();
         }
     }
 
@@ -122,7 +122,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        int lastmode = currentWorkMode;
         if (id != currentWorkMode) {
             currentWorkMode = id;
             if (currentWorkMode == WORKMODE_REPEAT) {
@@ -135,12 +134,9 @@ public class MainActivity extends AppCompatActivity {
                 showProgress();
                 Dubbing.go(this);
             }
-        }
 
-        Message msg = new Message();
-        msg.what = ListViewAdapter.MSGTYPE_WORKMODE;
-        msg.arg1 = currentWorkMode;
-        ListViewAdapter.listHandler.sendMessage(msg);
+            SubtitleListAdapter.workmodeChange();
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -210,12 +206,8 @@ public class MainActivity extends AppCompatActivity {
         AudioRecorder.init(MainActivity.this);
         AudioPlayer.init(MainActivity.this);
         videoPlayer.init(MainActivity.this, findViewById(R.id.videosfc));
-        ListViewAdapter.initSubtitle(MainActivity.this, findViewById(R.id.subtitlelist), videoPlayer);
-
-        Message msg = new Message();
-        msg.what = ListViewAdapter.MSGTYPE_SELECT;
-        msg.arg1 = pos;
-        ListViewAdapter.listHandler.sendMessage(msg);
+        SubtitleListAdapter.initSubtitle(MainActivity.this, findViewById(R.id.subtitlelist), videoPlayer);
+        SubtitleListAdapter.subtitleSelected(pos);
 
         Preferences.set(baseName);
         Preferences.set(baseName, Subtitle.getRecSum(), Subtitle.size());
@@ -237,6 +229,9 @@ public class MainActivity extends AppCompatActivity {
                 progressbar.setProgress(currentpos * 100 / videoPlayer.getDuration());
             } else if (msg.what == PROGRESS_DISMISS) {
                 dismissProgress();
+            } else if (msg.what == CANNOT_DUB) {
+                Toast.makeText(getApplicationContext(), "配音模式不可用", Toast.LENGTH_LONG).show();
+                currentWorkMode = Menu.FIRST + 0;
             }
         }
     };

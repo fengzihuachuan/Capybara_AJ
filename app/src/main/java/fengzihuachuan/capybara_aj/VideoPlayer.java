@@ -10,7 +10,6 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.Toast;
 
 public class VideoPlayer implements SurfaceHolder.Callback,
         View.OnTouchListener,
@@ -30,7 +29,6 @@ public class VideoPlayer implements SurfaceHolder.Callback,
     static MediaPlayer mPlayer = null;
 
     static int startPos = 0, endPos = 0;
-    static boolean ifCombine = false;
 
     public void init(MainActivity m, SurfaceView sfv) {
         main = m;
@@ -45,7 +43,7 @@ public class VideoPlayer implements SurfaceHolder.Callback,
         try {
             if (mPlayer != null) {
                 mPlayer.stop();
-                mPlayer.release();
+                mPlayer.reset();
                 mPlayer = null;
             }
 
@@ -62,15 +60,15 @@ public class VideoPlayer implements SurfaceHolder.Callback,
     }
 
     public void pause() {
-        if (mPlayer != null) {
+        if (mPlayer != null && mPlayer.isPlaying()) {
             mPlayer.pause();
         }
     }
 
-    public void release() {
+    public void reset() {
         if (mPlayer != null) {
             mPlayer.stop();
-            mPlayer.release();
+            mPlayer.reset();
         }
     }
 
@@ -78,10 +76,9 @@ public class VideoPlayer implements SurfaceHolder.Callback,
         return mPlayer.getDuration();
     }
 
-    public void play(int start, int end, boolean c) {
+    public void play(int start, int end) {
         startPos = start;
         endPos = end;
-        ifCombine = c;
 
         try {
             if (mPlayer.isPlaying()) {
@@ -143,12 +140,6 @@ public class VideoPlayer implements SurfaceHolder.Callback,
 
     @Override
     public void onSeekComplete(MediaPlayer mp) {
-        Log.d(TAG, "onSeekComplete: ");
-        Message msg = new Message();
-        msg.what = ListViewAdapter.MSGTYPE_VIDEOSTART;
-        msg.arg1 = ifCombine ? 1 : 0;
-        ListViewAdapter.listHandler.sendMessage(msg);
-
         mPlayer.start();
 
         new Thread() {
@@ -175,15 +166,14 @@ public class VideoPlayer implements SurfaceHolder.Callback,
                             msg.arg1 = currentpos;
                             main.mainHandler.sendMessage(msg);
                         } else {
-                            ListViewAdapter.playUpdate(currentpos);
+                            SubtitleListAdapter.playUpdate(currentpos);
                         }
                         sleep(100);
                     }
 
                     msg = new Message();
-                    msg.what = ListViewAdapter.MSGTYPE_VIDEOSTOP;
-                    msg.arg1 = ifCombine ? 1 : 0;
-                    ListViewAdapter.listHandler.sendMessage(msg);
+                    msg.what = SubtitleListAdapter.MSGTYPE_PROCSTOP;
+                    SubtitleListAdapter.listHandler.sendMessage(msg);
 
                     // quit keeping screen on
                     msg = new Message();

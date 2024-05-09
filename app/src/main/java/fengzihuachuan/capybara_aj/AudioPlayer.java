@@ -12,7 +12,8 @@ public class AudioPlayer {
     private static MediaPlayer player;
 
     private static SoundPool spl;
-    private static int[] splid = new int[4];
+    private static int[] splid = new int[2];
+    private static int[] period =  {145, 85};
 
     static MainActivity main;
 
@@ -23,15 +24,15 @@ public class AudioPlayer {
 
     public static void replay(int sbtidx) {
         try {
-            MediaPlayer player = new MediaPlayer();
+            player = new MediaPlayer();
             player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mediaPlayer) {
-                    player.release();
+                    player.reset();
 
                     Message msg = new Message();
-                    msg.what = ListViewAdapter.MSGTYPE_REPLAYSTOP;
-                    ListViewAdapter.listHandler.sendMessage(msg);
+                    msg.what = SubtitleListAdapter.MSGTYPE_PROCSTOP;
+                    SubtitleListAdapter.listHandler.sendMessage(msg);
                 }
             });
             player.setDataSource(FileUtils.getCurrInfo(FileUtils.GET_RECPATH, sbtidx));
@@ -39,6 +40,13 @@ public class AudioPlayer {
             player.start();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void stop() {
+        if (player != null && player.isPlaying()) {
+            player.pause();
+            player.reset();
         }
     }
 
@@ -53,7 +61,7 @@ public class AudioPlayer {
     public static void playBeep(int id) {
         spl.play(splid[id], 1, 1, 2, 0, 1);
         try {
-            Thread.sleep(210);
+            Thread.sleep(period[id]);
         } catch (Exception e) {
             e.printStackTrace();
         }
