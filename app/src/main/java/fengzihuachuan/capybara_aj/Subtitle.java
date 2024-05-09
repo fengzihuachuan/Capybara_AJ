@@ -19,12 +19,7 @@ public class Subtitle {
     static TimedTextObject currTto;
     static String currSubtlPath;
 
-    private static ArrayList<ListItem> subtitleList = null;
-
-    static int getSize(String path) {
-        TimedTextObject tto = _load(path);
-        return tto.captions.keySet().size();
-    }
+    private static ArrayList<SubtitleItem> subtitleList = null;
 
     private static TimedTextObject _load(String path) {
         File file = new File(path);
@@ -50,11 +45,11 @@ public class Subtitle {
         return null;
     }
 
-    static ArrayList<ListItem> loadCurrent() {
+    static ArrayList<SubtitleItem> loadCurrent() {
         if (subtitleList != null) {
             subtitleList.clear();
         }
-        subtitleList = new ArrayList<ListItem>();
+        subtitleList = new ArrayList<SubtitleItem>();
 
         currSubtlPath = FileUtils.getCurrInfo(FileUtils.GET_SBTPATH);
 
@@ -62,24 +57,40 @@ public class Subtitle {
         if (currTto == null) {
             return null;
         } else {
+            int id = 0;
             for (Integer key : currTto.captions.keySet()) {
                 currTto.captions.get(key).content = currTto.captions.get(key).content.replaceAll("<[^>]+>", ""); //删除html标签
-                ListItem i = new ListItem(key, currTto.captions.get(key).start, currTto.captions.get(key).content, currTto.captions.get(key).end);
+                SubtitleItem i = new SubtitleItem(id, currTto.captions.get(key).start, currTto.captions.get(key).end, currTto.captions.get(key).content, FileUtils.getRecStatus(id));
                 subtitleList.add(i);
+                id++;
             }
             return subtitleList;
         }
     }
 
-    static ArrayList<ListItem> list() {
+    static ArrayList<SubtitleItem> list() {
         return subtitleList;
     }
 
-    static ListItem get(int id) {
+    static SubtitleItem get(int id) {
         return subtitleList.get(id);
     }
 
     static int size() {
         return subtitleList.size();
+    }
+
+    static int getRecSum() {
+        int count = 0;
+        for (int i = 0; i < subtitleList.size(); i++) {
+            if (subtitleList.get(i).getRecExist()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    static void setRecExist(int id, boolean exist) {
+        subtitleList.get(id).setRecExist(exist);
     }
 }

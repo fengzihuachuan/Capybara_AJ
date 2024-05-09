@@ -50,7 +50,7 @@ public class AudioRecorder {
                             msg.arg1 = (int) ((System.currentTimeMillis() - start) * 1000 / period);
                             ListViewAdapter.listHandler.sendMessage(msg);
 
-                            sleep(20);
+                            sleep(100);
                         }
                     }
 

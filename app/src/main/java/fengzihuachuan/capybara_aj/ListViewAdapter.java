@@ -1,7 +1,6 @@
 package fengzihuachuan.capybara_aj;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Message;
@@ -21,7 +20,7 @@ import androidx.appcompat.widget.LinearLayoutCompat;
 import java.util.List;
 
 
-public class ListViewAdapter extends ArrayAdapter<ListItem> {
+public class ListViewAdapter extends ArrayAdapter<SubtitleItem> {
     static String TAG = "ListViewAdapter";
 
     private int resourceId;
@@ -45,6 +44,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
     public static int MSGTYPE_RECSTART = 5;
     public static int MSGTYPE_RECSTOP = 6;
     public static int MSGTYPE_PROGRESS = 7;
+    public static int MSGTYPE_WORKMODE = 8;
 
     public static int RECBTN_DISABLE = 0;
     public static int RECBTN_HAVEREC = 1;
@@ -53,8 +53,8 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
     public static int RECBTN_REPLAYING = 4;
     public static int RECBTN_COMPAREING = 5;
 
-    public ListViewAdapter(Context ctx, int resourceId1, List<ListItem> listItems) {
-        super(context, resourceId1, listItems);
+    public ListViewAdapter(Context ctx, int resourceId1, List<SubtitleItem> subtitleItems) {
+        super(context, resourceId1, subtitleItems);
         resourceId = resourceId1;
     }
 
@@ -69,20 +69,20 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 listViewAdapter.notifyDataSetInvalidated();
 
                 ((TextView)context.findViewById(R.id.sbtinfo)).setText((msg.arg1 + 1) + "/" + Subtitle.size());
-                ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.getCurrInfo(FileUtils.GET_RECSUM, "")+"");
+                ((TextView)context.findViewById(R.id.recsum)).setText(Subtitle.getRecSum()+"");
 
                 Preferences.set(msg.arg1);
             } else if (msg.what == MSGTYPE_VIDEOSTART) {
-                if (msg.arg1 == VideoPlayer.PLAYMODE_PART_COMBINE) {
+                if (msg.arg1 == 1) {
                     setRecButtons(RECBTN_COMPAREING);
                 } else {
                     setRecButtons(RECBTN_DISABLE);
                 }
             } else if (msg.what == MSGTYPE_VIDEOSTOP) {
-                if (msg.arg1 == VideoPlayer.PLAYMODE_PART) {
-                    resetRecButtons();
-                } else if (msg.arg1 == VideoPlayer.PLAYMODE_PART_COMBINE) {
+                if (msg.arg1 == 1) {
                     AudioPlayer.replay(selectIdx);
+                } else {
+                    resetRecButtons();
                 }
             } else if (msg.what == MSGTYPE_REPLAYSTART) {
 
@@ -92,12 +92,12 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 setRecButtons(RECBTN_RECORDING);
                 isRecording = true;
             } else if (msg.what == MSGTYPE_RECSTOP) {
-                FileUtils.setCurrInfo(FileUtils.SET_RECEXIST, msg.arg1);
+                Subtitle.setRecExist(msg.arg1, true);
                 resetRecButtons();
                 isRecording = false;
-                ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.getCurrInfo(FileUtils.GET_RECSUM, "")+"");
+                ((TextView)context.findViewById(R.id.recsum)).setText(Subtitle.getRecSum()+"");
                 currentView.subcontent.setTextColor(context.getColor(R.color.green));
-                Preferences.set(FileUtils.getCurrInfo(FileUtils.GET_BASENAME), FileUtils.getCurrInfo(FileUtils.GET_RECSUM, ""), FileUtils.getCurrInfo(FileUtils.GET_SBTSUM, ""));
+                Preferences.set(FileUtils.getCurrInfo(FileUtils.GET_BASENAME), Subtitle.getRecSum(), Subtitle.size());
             } else if (msg.what == MSGTYPE_PROGRESS) {
                 if (msg.arg1 >= 999) {
                     currentView.progressBar.setVisibility(View.INVISIBLE);
@@ -105,6 +105,14 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                     currentView.progressBar.setVisibility(View.VISIBLE);
                     currentView.progressBar.setProgress(msg.arg1/10);
                 }
+            } else if (msg.what == MSGTYPE_WORKMODE) {
+                if (msg.arg1 == context.WORKMODE_REPEAT) {
+                    currentView.recordlyt.setVisibility(View.VISIBLE);
+                    resetRecButtons();
+                } else {
+                    currentView.recordlyt.setVisibility(View.GONE);
+                }
+                videoPlayer.pause();
             }
         }
     };
@@ -124,7 +132,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
     }
 
     static void refreshSubtitle() {
-        listViewAdapter = new ListViewAdapter(context, R.layout.listview, Subtitle.list());
+        listViewAdapter = new ListViewAdapter(context, R.layout.subtitle_item, Subtitle.list());
         listView.setAdapter(listViewAdapter);
         listView.setOnItemClickListener(itemClickListener);
     }
@@ -139,11 +147,11 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 ListViewAdapter.listHandler.sendMessage(msg);
             } else {
                 if (!disableCurrSub) {
-                    ListItem i = Subtitle.get(selectIdx);
-                    if (context.currentWorkMode == context.WORKMODE_PLAY) {
-                        videoPlayer.play(i.getSubStart().getMseconds(), -1, VideoPlayer.PLAYMODE_WHOLE);
+                    SubtitleItem i = Subtitle.get(selectIdx);
+                    if (context.currentWorkMode == context.WORKMODE_REPEAT) {
+                        videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds(), false);
                     } else {
-                        videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds(), VideoPlayer.PLAYMODE_PART);
+                        videoPlayer.play(i.getSubStart().getMseconds(), -1, false);
                     }
                 }
             }
@@ -169,7 +177,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
         View view;
         ViewHolder viewHolder;
 
-        ListItem listItem = getItem(position);
+        SubtitleItem subtitleItem = getItem(position);
 
         if (convertView == null) { //当用户为第一次访问的时候
             view = LayoutInflater.from(getContext()).inflate(resourceId, null);
@@ -195,9 +203,9 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
             viewHolder = (ViewHolder)view.getTag();
         }
 
-        viewHolder.substart.setText(listItem.getSubStart().toString());
-        viewHolder.subcontent.setText(listItem.getSubContent());
-        viewHolder.subend.setText(listItem.getSubEnd().toString());
+        viewHolder.substart.setText(subtitleItem.getSubStart().toString());
+        viewHolder.subcontent.setText(subtitleItem.getSubContent());
+        viewHolder.subend.setText(subtitleItem.getSubEnd().toString());
 
         if (selectIdx == position) {
             currentView = viewHolder;
@@ -206,13 +214,13 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
             viewHolder.subcontent.setTypeface(Typeface.DEFAULT, Typeface.NORMAL);
             viewHolder.subcontent.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
 
+            viewHolder.recordlyt.setOnClickListener(noneOnClickListener);
+            viewHolder.compareBnt.setOnClickListener(compareBntOnClickListener);
+            viewHolder.replayBnt.setOnClickListener(replayBntOnClickListener);
+            viewHolder.recordBnt.setOnClickListener(recordBntOnClickListener);
+
             if (context.currentWorkMode == context.WORKMODE_REPEAT) {
                 viewHolder.recordlyt.setVisibility(View.VISIBLE);
-                viewHolder.recordlyt.setOnClickListener(noneOnClickListener);
-                viewHolder.compareBnt.setOnClickListener(compareBntOnClickListener);
-                viewHolder.replayBnt.setOnClickListener(replayBntOnClickListener);
-                viewHolder.recordBnt.setOnClickListener(recordBntOnClickListener);
-
                 resetRecButtons();
             }
         } else {
@@ -221,7 +229,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
             viewHolder.subcontent.setTypeface(Typeface.DEFAULT, Typeface.ITALIC);
         }
 
-        if (FileUtils.getCurrInfo(FileUtils.GET_RECEXIST, position) != null) {
+        if (Subtitle.get(position).getRecExist()) {
             viewHolder.subcontent.setTextColor(context.getColor(R.color.green));
         } else {
             viewHolder.subcontent.setTextColor(context.getColor(R.color.black));
@@ -240,8 +248,8 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
         @Override
         public void onClick(View view) {
             setRecButtons(RECBTN_COMPAREING);
-            ListItem i = Subtitle.get(selectIdx);
-            videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds(), VideoPlayer.PLAYMODE_PART_COMBINE);
+            SubtitleItem i = Subtitle.get(selectIdx);
+            videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds(), true);
         }
     };
 
@@ -259,7 +267,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
             if (isRecording == false) {
                 setRecButtons(RECBTN_DISABLE);
 
-                ListItem i = Subtitle.get(selectIdx);
+                SubtitleItem i = Subtitle.get(selectIdx);
                 int period = i.getSubEnd().getMseconds() - i.getSubStart().getMseconds() + 400;
                 AudioRecorder.start(selectIdx, period);
             } else {
@@ -269,7 +277,7 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
     };
 
     private static void resetRecButtons() {
-        if (FileUtils.getCurrInfo(FileUtils.GET_RECEXIST, selectIdx) != null) {
+        if (Subtitle.get(selectIdx).getRecExist()) {
             setRecButtons(RECBTN_HAVEREC);
         } else {
             setRecButtons(RECBTN_NOREC);

@@ -30,13 +30,9 @@ public class VideoPlayer implements SurfaceHolder.Callback,
     static MediaPlayer mPlayer = null;
 
     static int startPos = 0, endPos = 0;
-    static int playmode = 0;
+    static boolean ifCombine = false;
 
-    public static int PLAYMODE_WHOLE = 0;
-    public static int PLAYMODE_PART = 1;
-    public static int PLAYMODE_PART_COMBINE = 2;
-
-    void init(MainActivity m, SurfaceView sfv) {
+    public void init(MainActivity m, SurfaceView sfv) {
         main = m;
         videopath = FileUtils.getCurrInfo(FileUtils.GET_VIDEOPATH);
         videoSuf = sfv;
@@ -53,9 +49,7 @@ public class VideoPlayer implements SurfaceHolder.Callback,
                 mPlayer = null;
             }
 
-            Uri playUri = Uri.parse(videopath);
-            mPlayer = MediaPlayer.create(main, playUri);
-
+            mPlayer = new MediaPlayer();
             mPlayer.setOnCompletionListener(this);
             mPlayer.setOnErrorListener(this);
             mPlayer.setOnInfoListener(this);
@@ -84,17 +78,26 @@ public class VideoPlayer implements SurfaceHolder.Callback,
         return mPlayer.getDuration();
     }
 
-    public void play(int start, int end, int mode) {
+    public void play(int start, int end, boolean c) {
         startPos = start;
         endPos = end;
-        playmode = mode;
+        ifCombine = c;
+
         try {
             if (mPlayer.isPlaying()) {
                 mPlayer.pause();
-                sleep(100);
             }
+            mPlayer.reset();
 
+            Uri playUri;
+            if (main.currentWorkMode == MainActivity.WORKMODE_DUBBING) {
+                playUri = Uri.parse(Dubbing.getout());
+            } else {
+                playUri = Uri.parse(videopath);
+            }
             mPlayer.setDisplay(surfaceHolder);
+            mPlayer.setDataSource(main, playUri);
+            mPlayer.prepare();
             mPlayer.seekTo(start, MediaPlayer.SEEK_CLOSEST);
         } catch (Exception e) {
             e.printStackTrace();
@@ -136,7 +139,6 @@ public class VideoPlayer implements SurfaceHolder.Callback,
     @Override
     public void onCompletion(MediaPlayer mp) {
         Log.d(TAG, "onCompletion: ");
-        Toast.makeText(main, "视频播放完毕", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -144,7 +146,7 @@ public class VideoPlayer implements SurfaceHolder.Callback,
         Log.d(TAG, "onSeekComplete: ");
         Message msg = new Message();
         msg.what = ListViewAdapter.MSGTYPE_VIDEOSTART;
-        msg.arg1 = playmode;
+        msg.arg1 = ifCombine ? 1 : 0;
         ListViewAdapter.listHandler.sendMessage(msg);
 
         mPlayer.start();
@@ -163,9 +165,7 @@ public class VideoPlayer implements SurfaceHolder.Callback,
 
                     while (mPlayer.isPlaying()) {
                         int currentpos = mPlayer.getCurrentPosition();
-                        if (playmode == PLAYMODE_WHOLE) {
-                            ListViewAdapter.playUpdate(currentpos);
-                        } else {
+                        if (main.currentWorkMode == main.WORKMODE_REPEAT) {
                             if (currentpos > endPos) {
                                 mPlayer.pause();
                                 break;
@@ -174,13 +174,15 @@ public class VideoPlayer implements SurfaceHolder.Callback,
                             msg.what = MainActivity.MAINMSG_PLAYER;
                             msg.arg1 = currentpos;
                             main.mainHandler.sendMessage(msg);
+                        } else {
+                            ListViewAdapter.playUpdate(currentpos);
                         }
                         sleep(100);
                     }
 
                     msg = new Message();
                     msg.what = ListViewAdapter.MSGTYPE_VIDEOSTOP;
-                    msg.arg1 = playmode;
+                    msg.arg1 = ifCombine ? 1 : 0;
                     ListViewAdapter.listHandler.sendMessage(msg);
 
                     // quit keeping screen on

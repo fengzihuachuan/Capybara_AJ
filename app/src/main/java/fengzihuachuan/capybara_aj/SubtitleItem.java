@@ -2,28 +2,38 @@ package fengzihuachuan.capybara_aj;
 
 import fengzihuachuan.capybara_aj.subtitle.Time;
 
-public class ListItem {
+public class SubtitleItem {
     private int key;
     private Time substart;
     private Time subend;
     private String subcontent;
+    private boolean recExist;
 
-    public ListItem(int key, Time substart, String subcontent, Time subend) {
+    public SubtitleItem(int key, Time substart, Time subend, String subcontent, boolean recExist) {
         this.key = key;
         this.substart = substart;
-        this.subcontent = subcontent;
         this.subend = subend;
+        this.subcontent = subcontent;
+        this.recExist = recExist;
     }
 
     public Time getSubStart() {
         return substart;
     }
 
+    public Time getSubEnd() {
+        return subend;
+    }
+
     public String getSubContent() {
         return subcontent;
     }
 
-    public Time getSubEnd() {
-        return subend;
+    public boolean getRecExist() {
+        return recExist;
+    }
+
+    public void setRecExist(boolean exist) {
+        recExist = exist;
     }
 }

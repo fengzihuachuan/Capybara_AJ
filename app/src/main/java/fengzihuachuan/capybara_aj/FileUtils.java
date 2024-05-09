@@ -21,20 +21,15 @@ public class FileUtils {
 
     static String resRootDir;
     static String recordDir;
+    static String dubDir;
 
     private static ArrayList<FilesInfo> fileslist = new ArrayList<>();
     static FilesInfo currentLoad;
-    static boolean[] currentRecList;
 
     public static final int GET_BASENAME = 0;
     public static final int GET_VIDEOPATH = 1;
     public static final int GET_SBTPATH = 2;
     public static final int GET_RECPATH = 3;
-    public static final int GET_RECEXIST = 4;
-    public static final int GET_RECSUM = 5;
-    public static final int GET_SBTSUM = 6;
-
-    public static final int SET_RECEXIST = 20 + 1;
 
 
     public static void init() {
@@ -47,8 +42,13 @@ public class FileUtils {
             resRootDir = sdCard.getCanonicalPath() + "/" + RootDirName +  "/";
             File f = new File(resRootDir);
             f.mkdirs();
+
             recordDir = resRootDir + "recordings/";
             f = new File(recordDir);
+            f.mkdirs();
+
+            dubDir = resRootDir + "dubbing/";
+            f = new File(dubDir);
             f.mkdirs();
 
             getVideoFiles();
@@ -102,20 +102,8 @@ public class FileUtils {
         }
     }
 
-    private static boolean[] getVideoRecInfo(String sbtPath, String baseName) {
-        int size = Subtitle.getSize(sbtPath);
-        boolean[] recinfo = new boolean[size];
-        for (int i = 0; i < size; i++) {
-            if (fileExist(getRecPath(baseName, i)))
-                recinfo[i] = true;
-            else
-                recinfo[i] = false;
-        }
-        return recinfo;
-    }
-
-    private static String getRecPath(String baseName, int id) {
-        return recordDir + baseName + "_" + (id+1) + ".aac";
+    public static boolean getRecStatus(int id) {
+        return fileExist(getCurrInfo(GET_RECPATH, id));
     }
 
     public static boolean fileExist(String path) {
@@ -171,43 +159,15 @@ public class FileUtils {
         }
     }
 
-    public static int getCurrInfo(int type, String nothing) {
-         if (type == GET_RECSUM) {
-            int count = 0;
-            for (int i = 0; i < currentRecList.length; i++) {
-                if (currentRecList[i]) {
-                    count++;
-                }
-            }
-            return count;
-        } else if (type == GET_SBTSUM) {
-            return currentRecList.length;
-        } else {
-            return 0;
-        }
-    }
-
     public static String getCurrInfo(int type, int id) {
         if (type == GET_RECPATH) {
-            return getRecPath(currentLoad.baseName, id);
-        } else if (type == GET_RECEXIST) {
-            if (currentRecList[id]) {
-                return "";
-            } else {
-                return null;
-            }
+            return recordDir + currentLoad.baseName + "_" + (id+1) + ".aac";
         } else {
             return null;
         }
     }
 
-    public static void setCurrInfo(int type, int id) {
-        if (type == SET_RECEXIST) {
-            currentRecList[id] = true;
-        }
-    }
-
-    public static int setCurrentVideo(String baseName) {
+    public static int setCurrent(String baseName) {
         if (baseName == null)
             return -1;
 
@@ -216,8 +176,6 @@ public class FileUtils {
             return -2;
         }
         currentLoad = fileslist.get(idx);
-        currentRecList = getVideoRecInfo(fileslist.get(idx).videoDir + fileslist.get(idx).sbtName, fileslist.get(idx).baseName);
-        Preferences.set(currentLoad.baseName, getCurrInfo(GET_RECSUM, ""), getCurrInfo(GET_SBTSUM, ""));
 
         return 0;
     }

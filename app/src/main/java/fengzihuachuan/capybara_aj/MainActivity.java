@@ -1,30 +1,20 @@
 package fengzihuachuan.capybara_aj;
 
-import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
-import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import fengzihuachuan.capybara_aj.databinding.ActivityMainBinding;
 
@@ -33,23 +23,22 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class MainActivity extends AppCompatActivity {
     static String TAG = "MainActivity";
 
-    /* 注意workmode和OptionsMenu中的序列相关联 */
-    static final public int WORKMODE_REPEAT = 0;
-    static final public int WORKMODE_PLAY = 1;
-    public int currentWorkMode = 0;
+    static final public int WORKMODE_REPEAT = Menu.FIRST + 0;
+    static final public int WORKMODE_PLAY = Menu.FIRST + 1;
+    static final public int WORKMODE_DUBBING = Menu.FIRST + 2;
+    public int currentWorkMode = Menu.FIRST + 0;
 
     private ActivityMainBinding binding;
 
+    AlertDialog alertDialogProgress = null;
     public VideoPlayer videoPlayer = null;
 
     public static int MAINMSG_SCREEN = 0;
     public static int MAINMSG_PLAYER = 1;
+    public static int PROGRESS_DISMISS = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,16 +99,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        menu.add(Menu.NONE, Menu.FIRST + 0, 0, "1").setIcon(R.drawable.ic_launcher_background);
-        menu.add(Menu.NONE, Menu.FIRST + 1, 0, "1").setIcon(R.drawable.ic_launcher_background);
+        menu.add(Menu.NONE, WORKMODE_REPEAT, 0, "1").setIcon(R.drawable.ic_launcher_background);
+        menu.add(Menu.NONE, WORKMODE_PLAY, 0, "1").setIcon(R.drawable.ic_launcher_background);
+        menu.add(Menu.NONE, WORKMODE_DUBBING, 0, "1").setIcon(R.drawable.ic_launcher_background);
         return true;
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        String[] m = {"复读模式", "播放模式"};
+        String[] m = {"复读模式", "播放模式", "配音模式"};
         for (int i = 0; i < menu.size(); i++) {
-            if (currentWorkMode == i) {
+            if ((currentWorkMode-Menu.FIRST) == i) {
                 menu.getItem(i).setTitle("> " + m[i]);
             } else {
                 menu.getItem(i).setTitle(m[i]);
@@ -132,15 +122,41 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == Menu.FIRST + 0) {
-            currentWorkMode = WORKMODE_REPEAT;
-            Toast.makeText(getApplicationContext(), "进入 复读模式", Toast.LENGTH_LONG).show();
-        } else if (id == Menu.FIRST + 1) {
-            currentWorkMode = WORKMODE_PLAY;
-            Toast.makeText(getApplicationContext(), "进入 播放模式", Toast.LENGTH_LONG).show();
+        int lastmode = currentWorkMode;
+        if (id != currentWorkMode) {
+            currentWorkMode = id;
+            if (currentWorkMode == WORKMODE_REPEAT) {
+                Toast.makeText(getApplicationContext(), "进入 复读模式", Toast.LENGTH_LONG).show();
+            } else if (currentWorkMode == WORKMODE_PLAY) {
+                Toast.makeText(getApplicationContext(), "进入 播放模式", Toast.LENGTH_LONG).show();
+            } else if (currentWorkMode == WORKMODE_DUBBING) {
+                Toast.makeText(getApplicationContext(), "进入 配音模式", Toast.LENGTH_LONG).show();
+
+                showProgress();
+                Dubbing.go(this);
+            }
         }
 
+        Message msg = new Message();
+        msg.what = ListViewAdapter.MSGTYPE_WORKMODE;
+        msg.arg1 = currentWorkMode;
+        ListViewAdapter.listHandler.sendMessage(msg);
+
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showProgress() {
+        if (alertDialogProgress == null) {
+            alertDialogProgress = new AlertDialog.Builder(this).create();
+        }
+        View loadView = LayoutInflater.from(this).inflate(R.layout.alert_progress, null);
+        alertDialogProgress.setView(loadView, 0, 0, 0, 0);
+        alertDialogProgress.setCanceledOnTouchOutside(false);
+        alertDialogProgress.show();
+    }
+
+    private void dismissProgress() {
+        alertDialogProgress.dismiss();
     }
 
     private View.OnClickListener openOnClickListener = new View.OnClickListener() {
@@ -185,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
             return -1;
         }
 
-        if (FileUtils.setCurrentVideo(baseName) != 0)
+        if (FileUtils.setCurrent(baseName) != 0)
             return -1;
 
         ((TextView)findViewById(R.id.dirname)).setText(FileUtils.get(id).videoSubDir);
@@ -202,6 +218,7 @@ public class MainActivity extends AppCompatActivity {
         ListViewAdapter.listHandler.sendMessage(msg);
 
         Preferences.set(baseName);
+        Preferences.set(baseName, Subtitle.getRecSum(), Subtitle.size());
         return 0;
     }
 
@@ -218,6 +235,8 @@ public class MainActivity extends AppCompatActivity {
                 ProgressBar progressbar = findViewById(R.id.Progressbar);
                 int currentpos = msg.arg1;
                 progressbar.setProgress(currentpos * 100 / videoPlayer.getDuration());
+            } else if (msg.what == PROGRESS_DISMISS) {
+                dismissProgress();
             }
         }
     };
