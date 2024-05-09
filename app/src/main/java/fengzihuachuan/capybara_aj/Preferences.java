@@ -12,21 +12,30 @@ public class Preferences {
         editor = sharedPref.edit();
     }
 
-    public static String getLastVideo() {
-        return sharedPref.getString("lastVideo", null);
+    public static String get(String def) {
+        return sharedPref.getString("lastName", def);
     }
 
-    public static void setLastVideo(String videoName) {
-        editor.putString("lastVideo", videoName);
+    public static int get(int def) {
+        return sharedPref.getInt("lastPos", def);
+    }
+
+    public static String get(String name, int defa, int defb) {
+        return sharedPref.getString("INFO_"+name, "0/0");
+    }
+
+    public static void set(String baseName) {
+        editor.putString("lastName", baseName);
         editor.apply();
     }
 
-    public static int getLastPos() {
-        return sharedPref.getInt("lastPos", 0);
+    public static void set(int pos) {
+        editor.putInt("lastPos", pos);
+        editor.apply();
     }
 
-    public static void setLastPos(int pos) {
-        editor.putInt("lastPos", pos);
+    public static void set(String name, int recSum, int sbtSum) {
+        editor.putString("INFO_"+name, recSum+"/"+sbtSum);
         editor.apply();
     }
 }

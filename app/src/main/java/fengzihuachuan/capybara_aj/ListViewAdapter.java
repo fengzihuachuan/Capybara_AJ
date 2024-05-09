@@ -69,9 +69,9 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 listViewAdapter.notifyDataSetInvalidated();
 
                 ((TextView)context.findViewById(R.id.sbtinfo)).setText((msg.arg1 + 1) + "/" + Subtitle.size());
-                ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.currRecSum()+"");
+                ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.getCurrInfo(FileUtils.GET_RECSUM, "")+"");
 
-                Preferences.setLastPos(msg.arg1);
+                Preferences.set(msg.arg1);
             } else if (msg.what == MSGTYPE_VIDEOSTART) {
                 if (msg.arg1 == VideoPlayer.PLAYMODE_PART_COMBINE) {
                     setRecButtons(RECBTN_COMPAREING);
@@ -95,8 +95,9 @@ public class ListViewAdapter extends ArrayAdapter<ListItem> {
                 FileUtils.setCurrInfo(FileUtils.SET_RECEXIST, msg.arg1);
                 resetRecButtons();
                 isRecording = false;
-                ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.currRecSum()+"");
+                ((TextView)context.findViewById(R.id.recsum)).setText(FileUtils.getCurrInfo(FileUtils.GET_RECSUM, "")+"");
                 currentView.subcontent.setTextColor(context.getColor(R.color.green));
+                Preferences.set(FileUtils.getCurrInfo(FileUtils.GET_BASENAME), FileUtils.getCurrInfo(FileUtils.GET_RECSUM, ""), FileUtils.getCurrInfo(FileUtils.GET_SBTSUM, ""));
             } else if (msg.what == MSGTYPE_PROGRESS) {
                 if (msg.arg1 >= 999) {
                     currentView.progressBar.setVisibility(View.INVISIBLE);

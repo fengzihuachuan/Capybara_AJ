@@ -151,9 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
             final String[] filesShow =  new String[FileUtils.size()];
             for (int i = 0; i < FileUtils.size(); i++) {
-                int sbtrec = FileUtils.getRecSum(i);
-                int sbtsum = FileUtils.get(i).recList.length;
-                String t = sbtrec + "/" + sbtsum + "  -  " + FileUtils.get(i).baseName + "\n" + FileUtils.get(i).videoSubDir;
+                String t = Preferences.get(FileUtils.get(i).baseName, 0, 0) + "  -  " + FileUtils.get(i).baseName + "\n" + FileUtils.get(i).videoSubDir;
                 filesShow[i] = t.substring(0, Math.min(t.length(), 64)) + "...";
             }
 
@@ -172,22 +170,22 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void resumeLast() {
-        int ret = loadCurrent(Preferences.getLastVideo(), -1, Preferences.getLastPos());
+        int ret = loadCurrent(Preferences.get(null), -1, Preferences.get(0));
         if (ret != 0) {
             Log.i(TAG, "resumeLast NULL ");
         }
     }
 
-    private int loadCurrent(String videoName, int id, int pos) {
-        if (videoName == null && id != -1) {
-            videoName = FileUtils.get(id).videoName;
-        } else if (id == -1 && videoName != null) {
-            id = FileUtils.existInList(videoName);
+    private int loadCurrent(String baseName, int id, int pos) {
+        if (baseName == null && id != -1) {
+            baseName = FileUtils.get(id).baseName;
+        } else if (id == -1 && baseName != null) {
+            id = FileUtils.existInList(baseName);
         } else {
             return -1;
         }
 
-        if (FileUtils.setCurrentVideo(videoName) != 0)
+        if (FileUtils.setCurrentVideo(baseName) != 0)
             return -1;
 
         ((TextView)findViewById(R.id.dirname)).setText(FileUtils.get(id).videoSubDir);
@@ -203,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
         msg.arg1 = pos;
         ListViewAdapter.listHandler.sendMessage(msg);
 
-        Preferences.setLastVideo(videoName);
+        Preferences.set(baseName);
         return 0;
     }
 

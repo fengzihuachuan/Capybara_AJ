@@ -24,16 +24,18 @@ public class FileUtils {
 
     private static ArrayList<FilesInfo> fileslist = new ArrayList<>();
     static FilesInfo currentLoad;
+    static boolean[] currentRecList;
 
-    //public static final int GET_VIDOENAME = 0;
+    public static final int GET_BASENAME = 0;
     public static final int GET_VIDEOPATH = 1;
-    //public static final int GET_SBTNAME = 2;
-    public static final int GET_SBTPATH = 3;
-    //public static final int GET_SUBDIR = 4;
-    //public static final int GET_RECDIR = 5;
-    public static final int GET_RECPATH = 6;
-    public static final int GET_RECEXIST = 7;
-    public static final int SET_RECEXIST = 8;
+    public static final int GET_SBTPATH = 2;
+    public static final int GET_RECPATH = 3;
+    public static final int GET_RECEXIST = 4;
+    public static final int GET_RECSUM = 5;
+    public static final int GET_SBTSUM = 6;
+
+    public static final int SET_RECEXIST = 20 + 1;
+
 
     public static void init() {
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
@@ -85,7 +87,7 @@ public class FileUtils {
                             sbtName = t;
                         }
 
-                        unsortflist.add(new FilesInfo(videoDir, videoSubdir, baseName, videoName, sbtName, getVideoRecInfo(videoDir + sbtName, videoName)));
+                        unsortflist.add(new FilesInfo(videoDir, videoSubdir, baseName, videoName, sbtName));
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -100,11 +102,11 @@ public class FileUtils {
         }
     }
 
-    private static boolean[] getVideoRecInfo(String sbtPath, String videoName) {
+    private static boolean[] getVideoRecInfo(String sbtPath, String baseName) {
         int size = Subtitle.getSize(sbtPath);
         boolean[] recinfo = new boolean[size];
         for (int i = 0; i < size; i++) {
-            if (fileExist(getRecPath(videoName, i)))
+            if (fileExist(getRecPath(baseName, i)))
                 recinfo[i] = true;
             else
                 recinfo[i] = false;
@@ -112,18 +114,8 @@ public class FileUtils {
         return recinfo;
     }
 
-    private static String getRecPath(String videoName, int id) {
-        return recordDir + videoName + "_" + (id+1) + ".aac";
-    }
-
-    public static int currRecSum() {
-        int count = 0;
-        for (int i = 0; i < Subtitle.size(); i++) {
-            if (fileExist(getRecPath(currentLoad.videoName, i))) {
-                count += 1;
-            }
-        }
-        return count;
+    private static String getRecPath(String baseName, int id) {
+        return recordDir + baseName + "_" + (id+1) + ".aac";
     }
 
     public static boolean fileExist(String path) {
@@ -148,10 +140,10 @@ public class FileUtils {
         return unsortlist;
     }
 
-    public static int existInList(String videoName) {
+    public static int existInList(String baseName) {
         int size = fileslist.size();
         for (int i = 0; i < size; i++) {
-            if (videoName.equals(fileslist.get(i).videoName)) {
+            if (baseName.equals(fileslist.get(i).baseName)) {
                 return i;
             }
         }
@@ -167,31 +159,39 @@ public class FileUtils {
         return fileslist.size();
     }
 
-    public static int getRecSum(int id) {
-        int count = 0;
-        for (int i = 0; i < fileslist.get(id).recList.length; i++) {
-            if (fileslist.get(id).recList[i]) {
-                count++;
-            }
-        }
-        return count;
-    }
-
     public static String getCurrInfo(int type) {
         if (type == GET_VIDEOPATH) {
             return currentLoad.videoDir + currentLoad.videoName;
         } else if (type == GET_SBTPATH) {
             return currentLoad.videoDir + currentLoad.sbtName;
+        } else if (type == GET_BASENAME) {
+            return currentLoad.baseName;
         } else {
             return null;
         }
     }
 
+    public static int getCurrInfo(int type, String nothing) {
+         if (type == GET_RECSUM) {
+            int count = 0;
+            for (int i = 0; i < currentRecList.length; i++) {
+                if (currentRecList[i]) {
+                    count++;
+                }
+            }
+            return count;
+        } else if (type == GET_SBTSUM) {
+            return currentRecList.length;
+        } else {
+            return 0;
+        }
+    }
+
     public static String getCurrInfo(int type, int id) {
         if (type == GET_RECPATH) {
-            return getRecPath(currentLoad.videoName, id);
+            return getRecPath(currentLoad.baseName, id);
         } else if (type == GET_RECEXIST) {
-            if (currentLoad.recList[id]) {
+            if (currentRecList[id]) {
                 return "";
             } else {
                 return null;
@@ -203,22 +203,21 @@ public class FileUtils {
 
     public static void setCurrInfo(int type, int id) {
         if (type == SET_RECEXIST) {
-            currentLoad.recList[id] = true;
-            return;
-        } else {
-            return;
+            currentRecList[id] = true;
         }
     }
 
-    public static int setCurrentVideo(String videoName) {
-        if (videoName == null)
+    public static int setCurrentVideo(String baseName) {
+        if (baseName == null)
             return -1;
 
-        int idx = existInList(videoName);
+        int idx = existInList(baseName);
         if (idx == -1) {
             return -2;
         }
         currentLoad = fileslist.get(idx);
+        currentRecList = getVideoRecInfo(fileslist.get(idx).videoDir + fileslist.get(idx).sbtName, fileslist.get(idx).baseName);
+        Preferences.set(currentLoad.baseName, getCurrInfo(GET_RECSUM, ""), getCurrInfo(GET_SBTSUM, ""));
 
         return 0;
     }
@@ -229,15 +228,14 @@ public class FileUtils {
         String baseName;
         String videoName;
         String sbtName;
-        boolean[] recList;
 
-        FilesInfo(String vd, String vsd, String b, String v, String s, boolean[] rl) {
+
+        FilesInfo(String vd, String vsd, String b, String v, String s) {
             videoDir = vd;
             videoSubDir = vsd;
             baseName = b;
             videoName = v;
             sbtName = s;
-            recList = rl;
         }
 
         String getVideoDir() {
