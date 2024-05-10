@@ -33,6 +33,7 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
 
     private static ViewHolder currentView;
 
+    public static final int MSGTYPE_SELECTED = 1;
     public static final int MSGTYPE_PROCSTOP = 2;
     public static final int MSGTYPE_RECSTOP = 3;
     public static final int MSGTYPE_PROGRESS = 4;
@@ -52,7 +53,9 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
     public static Handler listHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what == MSGTYPE_PROCSTOP) {
+            if (msg.what == MSGTYPE_SELECTED) {
+                subtitleSelected(msg.arg1);
+            } else if (msg.what == MSGTYPE_PROCSTOP) {
                 updateStatus(STATUS_NOTHING);
             } else if (msg.what == MSGTYPE_RECSTOP) {
                 Subtitle.get(msg.arg1).setRecExist(true);
@@ -137,8 +140,10 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
             return;
         } else {
             if (currentpos > Subtitle.get(selectIdx).getSubEnd().getMseconds()) {
-                subtitleSelected(selectIdx);
-                selectIdx = selectIdx + 1;
+                msg = new Message();
+                msg.what = MSGTYPE_SELECTED;
+                msg.arg1 = selectIdx + 1;
+                listHandler.sendMessage(msg);
             }
         }
     }
