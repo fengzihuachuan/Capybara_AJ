@@ -35,7 +35,7 @@ public class AudioPlayer {
                     SubtitleListAdapter.listHandler.sendMessage(msg);
                 }
             });
-            player.setDataSource(FileUtils.getCurrInfo(FileUtils.GET_RECPATH, sbtidx));
+            player.setDataSource(Files.getCurrInfo(Files.GET_RECPATH, sbtidx));
             player.prepare();
             player.start();
         } catch (IOException e) {

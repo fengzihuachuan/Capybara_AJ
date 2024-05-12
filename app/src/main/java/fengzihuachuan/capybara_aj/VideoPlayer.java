@@ -32,7 +32,7 @@ public class VideoPlayer implements SurfaceHolder.Callback,
 
     public void init(MainActivity m, SurfaceView sfv) {
         main = m;
-        videopath = FileUtils.getCurrInfo(FileUtils.GET_VIDEOPATH);
+        videopath = Files.getCurrInfo(Files.GET_VIDEOPATH);
         videoSuf = sfv;
 
         videoSuf.setOnTouchListener(this);
@@ -100,7 +100,7 @@ public class VideoPlayer implements SurfaceHolder.Callback,
             e.printStackTrace();
         }
 
-        Log.d(TAG, "play - start: " + TimeFmt.strFromMs(start) + " end: " + TimeFmt.strFromMs(end));
+        //Log.d(TAG, "play - start: " + TimeFmt.strFromMs(start) + " end: " + TimeFmt.strFromMs(end));
     }
 
     @Override
@@ -130,12 +130,12 @@ public class VideoPlayer implements SurfaceHolder.Callback,
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        Log.d(TAG, "onPrepared: ");
+        //Log.d(TAG, "onPrepared: ");
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        Log.d(TAG, "onCompletion: ");
+        //Log.d(TAG, "onCompletion: ");
     }
 
     @Override

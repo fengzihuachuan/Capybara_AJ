@@ -36,7 +36,7 @@ public class AudioRecorder {
             mMediaRecorder.setAudioChannels(achannel);
             mMediaRecorder.setAudioEncodingBitRate(abitrate);
             mMediaRecorder.setAudioSamplingRate(asamplerate);
-            mMediaRecorder.setOutputFile(FileUtils.getCurrInfo(FileUtils.GET_RECPATH, recSbtId));
+            mMediaRecorder.setOutputFile(Files.getCurrInfo(Files.GET_RECPATH, recSbtId));
             mMediaRecorder.prepare();
             AudioPlayer.playBeep(0);
             mMediaRecorder.start();

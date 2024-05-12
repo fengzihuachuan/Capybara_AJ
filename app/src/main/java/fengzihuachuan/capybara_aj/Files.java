@@ -6,7 +6,6 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -14,7 +13,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 
-public class FileUtils {
+public class Files {
     static String TAG = "FileUtils";
 
     static String RootDirName = "CPBRs";
@@ -23,8 +22,8 @@ public class FileUtils {
     static String recordDir;
     static String dubDir;
 
-    private static ArrayList<FilesInfo> fileslist = new ArrayList<>();
-    static FilesInfo currentLoad;
+    private static ArrayList<Info> fileslist = new ArrayList<>();
+    static Info currentLoad;
 
     public static final int GET_BASENAME = 0;
     public static final int GET_VIDEOPATH = 1;
@@ -58,9 +57,9 @@ public class FileUtils {
     }
 
     private static void getVideoFiles() {
-        ArrayList<FilesInfo> unsortflist = new ArrayList<>();
+        ArrayList<Info> unsortflist = new ArrayList<>();
         try {
-            Files.walkFileTree(Paths.get(resRootDir), new SimpleFileVisitor<Path>() {
+            java.nio.file.Files.walkFileTree(Paths.get(resRootDir), new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     String videoDir = file.toString().substring(0, file.toString().lastIndexOf('/') + 1);
@@ -87,7 +86,7 @@ public class FileUtils {
                             sbtName = t;
                         }
 
-                        unsortflist.add(new FilesInfo(videoDir, videoSubdir, baseName, videoName, sbtName));
+                        unsortflist.add(new Info(videoDir, videoSubdir, baseName, videoName, sbtName, Preferences.get(baseName, 0, 0)));
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -123,8 +122,8 @@ public class FileUtils {
         return true;
     }
 
-    private static ArrayList<FilesInfo> sortList(ArrayList<FilesInfo> unsortlist) {
-        unsortlist.sort(Comparator.comparing(FilesInfo::getVideoDir).thenComparing(FilesInfo::getBaseName));
+    private static ArrayList<Info> sortList(ArrayList<Info> unsortlist) {
+        unsortlist.sort(Comparator.comparing(Info::getVideoDir).thenComparing(Info::getBaseName));
         return unsortlist;
     }
 
@@ -139,8 +138,12 @@ public class FileUtils {
         return -1;
     }
 
-    public static FilesInfo get(int id) {
+    public static Info get(int id) {
         return fileslist.get(id);
+    }
+
+    public static ArrayList<Info> list() {
+        return fileslist;
     }
 
     public static int size() {
@@ -180,20 +183,21 @@ public class FileUtils {
         return 0;
     }
 
-    static public class FilesInfo {
+    static public class Info {
         String videoDir;
         String videoSubDir;
         String baseName;
         String videoName;
         String sbtName;
+        String recInfo;
 
-
-        FilesInfo(String vd, String vsd, String b, String v, String s) {
+        Info(String vd, String vsd, String b, String v, String s, String rec) {
             videoDir = vd;
             videoSubDir = vsd;
             baseName = b;
             videoName = v;
             sbtName = s;
+            recInfo = rec;
         }
 
         String getVideoDir() {

@@ -18,6 +18,8 @@ import android.view.View;
 import fengzihuachuan.capybara_aj.databinding.ActivityMainBinding;
 
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
 
     AlertDialog alertDialogProgress = null;
+    AlertDialog alertDialogFileSelect = null;
     public VideoPlayer videoPlayer = null;
 
     public static int MAINMSG_SCREEN = 0;
@@ -55,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     public void init() {
         Preferences.init(this);
         videoPlayer = new VideoPlayer();
-        FileUtils.init();
+        Files.init();
         resumeLast();
     }
 
@@ -81,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
         new Handler().postDelayed(new Runnable() {
             public void run() {
-                FileUtils.init();
+                Files.init();
                 resumeLast();
             }
         }, 10);
@@ -158,12 +161,13 @@ public class MainActivity extends AppCompatActivity {
     private View.OnClickListener openOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
+            /*
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("请选择文件");
 
-            final String[] filesShow =  new String[FileUtils.size()];
-            for (int i = 0; i < FileUtils.size(); i++) {
-                String t = Preferences.get(FileUtils.get(i).baseName, 0, 0) + "  -  " + FileUtils.get(i).baseName + "\n" + FileUtils.get(i).videoSubDir;
+            final String[] filesShow =  new String[Files.size()];
+            for (int i = 0; i < Files.size(); i++) {
+                String t = Preferences.get(Files.get(i).baseName, 0, 0) + "  -  " + Files.get(i).baseName + "\n" + Files.get(i).videoSubDir;
                 filesShow[i] = t.substring(0, Math.min(t.length(), 64)) + "...";
             }
 
@@ -178,6 +182,26 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             builder.show();
+             */
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            View filelist = getLayoutInflater().inflate(R.layout.file_selector, null);
+            ListView listView = filelist.findViewById(R.id.fileslistview);
+            FilesListAdapter adapter = new FilesListAdapter(MainActivity.this, R.layout.file_item, Files.list());
+            listView.setAdapter(adapter);
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    int ret = loadCurrent(null, position, 0);
+                    if (ret != 0) {
+                        Toast.makeText(getApplicationContext(), "Files.VideoFiles NULL", Toast.LENGTH_LONG).show();
+                    }
+                    alertDialogFileSelect.dismiss();
+                }
+            });
+            adapter.notifyDataSetChanged();
+            builder.setView(filelist);
+            alertDialogFileSelect = builder.create();
+            alertDialogFileSelect.show();
         }
     };
 
@@ -190,18 +214,18 @@ public class MainActivity extends AppCompatActivity {
 
     private int loadCurrent(String baseName, int id, int pos) {
         if (baseName == null && id != -1) {
-            baseName = FileUtils.get(id).baseName;
+            baseName = Files.get(id).baseName;
         } else if (id == -1 && baseName != null) {
-            id = FileUtils.existInList(baseName);
+            id = Files.existInList(baseName);
         } else {
             return -1;
         }
 
-        if (FileUtils.setCurrent(baseName) != 0)
+        if (Files.setCurrent(baseName) != 0)
             return -1;
 
-        ((TextView)findViewById(R.id.dirname)).setText(FileUtils.get(id).videoSubDir);
-        ((TextView)findViewById(R.id.baseName)).setText(FileUtils.get(id).baseName);
+        ((TextView)findViewById(R.id.dirname)).setText(Files.get(id).videoSubDir);
+        ((TextView)findViewById(R.id.baseName)).setText(Files.get(id).baseName);
 
         AudioRecorder.init(MainActivity.this);
         AudioPlayer.init(MainActivity.this);

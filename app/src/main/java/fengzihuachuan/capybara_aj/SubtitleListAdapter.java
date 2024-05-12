@@ -20,13 +20,13 @@ import androidx.appcompat.widget.LinearLayoutCompat;
 import java.util.List;
 
 
-public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
-    static String TAG = "ListViewAdapter";
+public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
+    static String TAG = "SubtitleListAdapter";
 
     private int resourceId;
+    private static MainActivity context;
 
     private static int selectIdx = -1;
-    private static MainActivity context;
     private static SubtitleListAdapter subtitleListAdapter;
     private static ListView listView;
     private static VideoPlayer videoPlayer;
@@ -45,9 +45,10 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
     private static final int STATUS_COMPAREING = 4;
     private static int currentStatus;
 
-    public SubtitleListAdapter(Context ctx, int resourceId1, List<SubtitleItem> subtitleItems) {
-        super(context, resourceId1, subtitleItems);
+    public SubtitleListAdapter(Context ctx, int resourceId1, List<Subtitle.Item> items) {
+        super(ctx, resourceId1, items);
         resourceId = resourceId1;
+        context = (MainActivity)ctx;
     }
 
     public static Handler listHandler = new Handler() {
@@ -58,10 +59,10 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
             } else if (msg.what == MSGTYPE_PROCSTOP) {
                 updateStatus(STATUS_NOTHING);
             } else if (msg.what == MSGTYPE_RECSTOP) {
-                Subtitle.get(msg.arg1).setRecExist(true);
+                Subtitle.get(msg.arg1).recExist = true;
                 ((TextView)context.findViewById(R.id.recsum)).setText(Subtitle.getRecSum()+"");
                 currentView.subcontent.setTextColor(context.getColor(R.color.green));
-                Preferences.set(FileUtils.getCurrInfo(FileUtils.GET_BASENAME), Subtitle.getRecSum(), Subtitle.size());
+                Preferences.set(Files.getCurrInfo(Files.GET_BASENAME), Subtitle.getRecSum(), Subtitle.size());
             } else if (msg.what == MSGTYPE_PROGRESS) {
                 if (msg.arg1 >= 999) {
                     currentView.progressBar.setVisibility(View.INVISIBLE);
@@ -120,11 +121,11 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
                 subtitleSelected(position);
 
                 updateStatus(STATUS_PLAYING);
-                SubtitleItem i = Subtitle.get(selectIdx);
+                Subtitle.Item i = Subtitle.get(selectIdx);
                 if (context.currentWorkMode == context.WORKMODE_REPEAT) {
-                    videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds());
+                    videoPlayer.play(i.substart.getMseconds(), i.subend.getMseconds());
                 } else {
-                    videoPlayer.play(i.getSubStart().getMseconds(), -1);
+                    videoPlayer.play(i.substart.getMseconds(), -1);
                 }
             }
         }
@@ -139,7 +140,7 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
         if (Subtitle.get(selectIdx+1) == null) {
             return;
         } else {
-            if (currentpos > Subtitle.get(selectIdx).getSubEnd().getMseconds()) {
+            if (currentpos > Subtitle.get(selectIdx).subend.getMseconds()) {
                 msg = new Message();
                 msg.what = MSGTYPE_SELECTED;
                 msg.arg1 = selectIdx + 1;
@@ -153,7 +154,7 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
         View view;
         ViewHolder viewHolder;
 
-        SubtitleItem subtitleItem = getItem(position);
+        Subtitle.Item item = getItem(position);
 
         if (convertView == null) { //当用户为第一次访问的时候
             view = LayoutInflater.from(getContext()).inflate(resourceId, null);
@@ -179,9 +180,9 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
             viewHolder = (ViewHolder)view.getTag();
         }
 
-        viewHolder.substart.setText(subtitleItem.getSubStart().toString());
-        viewHolder.subcontent.setText(subtitleItem.getSubContent());
-        viewHolder.subend.setText(subtitleItem.getSubEnd().toString());
+        viewHolder.substart.setText(item.substart.toString());
+        viewHolder.subcontent.setText(item.subcontent);
+        viewHolder.subend.setText(item.subend.toString());
 
         if (selectIdx == position) {
             currentView = viewHolder;
@@ -204,7 +205,7 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
             viewHolder.subcontent.setTypeface(Typeface.DEFAULT, Typeface.ITALIC);
         }
 
-        if (Subtitle.get(position).getRecExist()) {
+        if (Subtitle.get(position).recExist) {
             viewHolder.subcontent.setTextColor(context.getColor(R.color.green));
         } else {
             viewHolder.subcontent.setTextColor(context.getColor(R.color.black));
@@ -223,9 +224,9 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
         @Override
         public void onClick(View view) {
             updateStatus(STATUS_COMPAREING);
-            SubtitleItem i = Subtitle.get(selectIdx);
+            Subtitle.Item i = Subtitle.get(selectIdx);
             AudioPlayer.replay(selectIdx);
-            videoPlayer.play(i.getSubStart().getMseconds(), i.getSubEnd().getMseconds());
+            videoPlayer.play(i.substart.getMseconds(), i.subend.getMseconds());
         }
     };
 
@@ -243,8 +244,8 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
             if (currentStatus == STATUS_NOTHING) {
                 updateStatus(STATUS_RECORDING);
 
-                SubtitleItem i = Subtitle.get(selectIdx);
-                int period = i.getSubEnd().getMseconds() - i.getSubStart().getMseconds() + 400;
+                Subtitle.Item i = Subtitle.get(selectIdx);
+                int period = i.subend.getMseconds() - i.substart.getMseconds() + 400;
                 AudioRecorder.start(selectIdx, period);
             } else {
                 AudioRecorder.stop();
@@ -255,10 +256,10 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
     private static void updateStatus(int s) {
         currentStatus = s;
 
-        Log.e(TAG, "updateStatus = " + s);
+        //Log.e(TAG, "updateStatus = " + s);
 
         if (s == STATUS_NOTHING) {
-            if (Subtitle.get(selectIdx).getRecExist()) {
+            if (Subtitle.get(selectIdx).recExist) {
                 currentView.compareBnt.setImageResource(R.drawable.compare_available);
                 currentView.compareBnt.setEnabled(true);
                 currentView.replayBnt.setImageResource(R.drawable.replay_available);
@@ -274,7 +275,7 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
                 currentView.recordBnt.setEnabled(true);
             }
         } else if (s == STATUS_PLAYING) {
-            Log.e(TAG, "updateStatus = STATUS_PLAYING");
+            //Log.e(TAG, "updateStatus = STATUS_PLAYING");
             currentView.compareBnt.setImageResource(R.drawable.compare_disable);
             currentView.compareBnt.setEnabled(false);
             currentView.replayBnt.setImageResource(R.drawable.replay_disable);
@@ -307,7 +308,7 @@ public class SubtitleListAdapter extends ArrayAdapter<SubtitleItem> {
         }
     }
 
-    class ViewHolder {
+    private static class ViewHolder {
         private LinearLayoutCompat timelyt, contentlyt, recordlyt;
         private TextView substart, subcontent, subend;
         private ImageButton compareBnt, replayBnt, recordBnt;

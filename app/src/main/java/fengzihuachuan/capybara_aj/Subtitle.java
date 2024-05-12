@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 import fengzihuachuan.capybara_aj.subtitle.FormatASS;
 import fengzihuachuan.capybara_aj.subtitle.FormatSRT;
+import fengzihuachuan.capybara_aj.subtitle.Time;
 import fengzihuachuan.capybara_aj.subtitle.TimedTextFileFormat;
 import fengzihuachuan.capybara_aj.subtitle.TimedTextObject;
 
@@ -19,7 +20,7 @@ public class Subtitle {
     static TimedTextObject currTto;
     static String currSubtlPath;
 
-    private static ArrayList<SubtitleItem> subtitleList = null;
+    private static ArrayList<Item> subtitleList = null;
 
     private static TimedTextObject _load(String path) {
         File file = new File(path);
@@ -45,13 +46,13 @@ public class Subtitle {
         return null;
     }
 
-    static ArrayList<SubtitleItem> loadCurrent() {
+    static ArrayList<Item> loadCurrent() {
         if (subtitleList != null) {
             subtitleList.clear();
         }
-        subtitleList = new ArrayList<SubtitleItem>();
+        subtitleList = new ArrayList<Item>();
 
-        currSubtlPath = FileUtils.getCurrInfo(FileUtils.GET_SBTPATH);
+        currSubtlPath = Files.getCurrInfo(Files.GET_SBTPATH);
 
         currTto = _load(currSubtlPath);
         if (currTto == null) {
@@ -60,7 +61,7 @@ public class Subtitle {
             int id = 0;
             for (Integer key : currTto.captions.keySet()) {
                 currTto.captions.get(key).content = currTto.captions.get(key).content.replaceAll("<[^>]+>", ""); //删除html标签
-                SubtitleItem i = new SubtitleItem(id, currTto.captions.get(key).start, currTto.captions.get(key).end, currTto.captions.get(key).content, FileUtils.getRecStatus(id));
+                Item i = new Item(id, currTto.captions.get(key).start, currTto.captions.get(key).end, currTto.captions.get(key).content, Files.getRecStatus(id));
                 subtitleList.add(i);
                 id++;
             }
@@ -68,11 +69,11 @@ public class Subtitle {
         }
     }
 
-    static ArrayList<SubtitleItem> list() {
+    static ArrayList<Item> list() {
         return subtitleList;
     }
 
-    static SubtitleItem get(int id) {
+    static Item get(int id) {
         if (id < subtitleList.size())
             return subtitleList.get(id);
         else
@@ -86,10 +87,26 @@ public class Subtitle {
     static int getRecSum() {
         int count = 0;
         for (int i = 0; i < subtitleList.size(); i++) {
-            if (subtitleList.get(i).getRecExist()) {
+            if (subtitleList.get(i).recExist) {
                 count++;
             }
         }
         return count;
+    }
+
+    public static class Item {
+        public int key;
+        public Time substart;
+        public Time subend;
+        public String subcontent;
+        public boolean recExist;
+
+        public Item(int key, Time substart, Time subend, String subcontent, boolean recExist) {
+            this.key = key;
+            this.substart = substart;
+            this.subend = subend;
+            this.subcontent = subcontent;
+            this.recExist = recExist;
+        }
     }
 }

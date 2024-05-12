@@ -16,12 +16,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 
 import fengzihuachuan.capybara_aj.subtitle.Time;
@@ -46,7 +40,7 @@ public class Dubbing {
     public static void go(MainActivity m) {
         main = m;
 
-        rootdir = FileUtils.dubDir + FileUtils.getCurrInfo(FileUtils.GET_BASENAME) + "/";
+        rootdir = Files.dubDir + Files.getCurrInfo(Files.GET_BASENAME) + "/";
         tmpdir = rootdir + "tmp/";
         outmux = rootdir + "mux.mp4";
         accomp = rootdir + "accompaniment.mp3";
@@ -74,7 +68,7 @@ public class Dubbing {
 
         gen();
 
-        Log.d(TAG, "exec: " + spiltcmd.get(0));
+        //Log.d(TAG, "exec: " + spiltcmd.get(0));
         FFmpegKit.executeAsync(spiltcmd.get(0), ffmpegSessionCompleteCallback, logCallback, statisticsCallback);
     }
 
@@ -99,10 +93,10 @@ public class Dubbing {
     private static boolean need() {
         File m = new File(outmux);
         for (int i = 0; i < Subtitle.size(); i++) {
-            if (Subtitle.get(i).getRecExist()) {
-                File f = new File(FileUtils.getCurrInfo(FileUtils.GET_RECPATH, i));
-                Log.d(TAG, "m.lastModified() " + m.lastModified());
-                Log.d(TAG, "f.lastModified() " + f.lastModified());
+            if (Subtitle.get(i).recExist) {
+                File f = new File(Files.getCurrInfo(Files.GET_RECPATH, i));
+                //Log.d(TAG, "m.lastModified() " + m.lastModified());
+                //Log.d(TAG, "f.lastModified() " + f.lastModified());
                 if (m.lastModified() < f.lastModified()) {
                     Log.d(TAG, "need: true ");
                     return true;
@@ -125,27 +119,27 @@ public class Dubbing {
         for (int i = 0; i < Subtitle.size(); i++) {
             int id = i + 1;
 
-            if (Subtitle.get(i).getRecExist()) {
-                ss1 = ss1 + " -i " + FileUtils.getCurrInfo(FileUtils.GET_RECPATH, i);
+            if (Subtitle.get(i).recExist) {
+                ss1 = ss1 + " -i " + Files.getCurrInfo(Files.GET_RECPATH, i);
             } else {
                 String tmppath = tmpdir + id + ".mp3";
 
                 Time d = new Time("", "");
-                d.setMseconds(Subtitle.get(i).getSubEnd().getMseconds() - Subtitle.get(i).getSubStart().getMseconds());
+                d.setMseconds(Subtitle.get(i).subend.getMseconds() - Subtitle.get(i).substart.getMseconds());
                 String duration = d.toString();
 
-                String ss = common + " -i " + vocals + " -vn -acodec copy " + " -ss " + Subtitle.get(i).getSubStart().toString() + " -t " + duration + " " + tmppath;
+                String ss = common + " -i " + vocals + " -vn -acodec copy " + " -ss " + Subtitle.get(i).substart.toString() + " -t " + duration + " " + tmppath;
                 spiltcmd.add(ss);
 
                 ss1 = ss1 + " -i " + tmppath;
             }
-            ss2 = ss2 + "[" + id + ":a]" + "volume=1," + "adelay=" + Subtitle.get(i).getSubStart().getMseconds() + ":all=true" + "[a" + id + "];";
+            ss2 = ss2 + "[" + id + ":a]" + "volume=1," + "adelay=" + Subtitle.get(i).substart.getMseconds() + ":all=true" + "[a" + id + "];";
             ss3 = ss3 + "[a" + id + "]";
         }
 
         mixcmd = ss1 + " -filter_complex \"" + ss2 + " " + ss3 + " amix=inputs=" + (Subtitle.size()+1) + ":duration=first:dropout_transition=0:normalize=0\" -c:a aac -b:a 128k " + mixout;
 
-        mergecmd = common + " -i " + FileUtils.getCurrInfo(FileUtils.GET_VIDEOPATH) + " -i " + mixout  + " -c:v copy -map 0:v:0 -map 1:a:0 " + outmux;
+        mergecmd = common + " -i " + Files.getCurrInfo(Files.GET_VIDEOPATH) + " -i " + mixout  + " -c:v copy -map 0:v:0 -map 1:a:0 " + outmux;
 
         spiltcmd.add(mixcmd);
         spiltcmd.add(mergecmd);
