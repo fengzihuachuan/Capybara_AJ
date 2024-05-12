@@ -43,7 +43,7 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
     private static final int STATUS_RECORDING = 2;
     private static final int STATUS_REPLAYING = 3;
     private static final int STATUS_COMPAREING = 4;
-    private static int currentStatus;
+    private static int currentStatus = STATUS_NOTHING;
 
     public SubtitleListAdapter(Context ctx, int resourceId1, List<Subtitle.Item> items) {
         super(ctx, resourceId1, items);
@@ -74,7 +74,7 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
         }
     };
 
-    static void initSubtitle(Context ctx, ListView lv, VideoPlayer vp) {
+    static void initSubtitle(Context ctx, ListView lv, VideoPlayer vp, int pos) {
         context = (MainActivity)ctx;
         listView = lv;
         videoPlayer = vp;
@@ -82,6 +82,8 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
         Subtitle.loadCurrent();
 
         refreshSubtitle();
+
+        SubtitleListAdapter.subtitleSelected(pos);
     }
 
     static void refreshSubtitle() {
@@ -102,7 +104,7 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
         Preferences.set(pos);
     }
 
-    public static void workmodeChange() {
+    public static void workModeChange() {
         videoPlayer.pause();
         AudioPlayer.stop();
 
@@ -119,8 +121,8 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             if (currentStatus == STATUS_NOTHING) {
                 subtitleSelected(position);
-
                 updateStatus(STATUS_PLAYING);
+
                 Subtitle.Item i = Subtitle.get(selectIdx);
                 if (context.currentWorkMode == context.WORKMODE_REPEAT) {
                     videoPlayer.play(i.substart.getMseconds(), i.subend.getMseconds());
@@ -157,27 +159,25 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
         Subtitle.Item item = getItem(position);
 
         if (convertView == null) { //当用户为第一次访问的时候
-            view = LayoutInflater.from(getContext()).inflate(resourceId, null);
-
+            convertView = LayoutInflater.from(getContext()).inflate(resourceId, null);
             viewHolder = new ViewHolder();
 
-            viewHolder.timelyt = view.findViewById(R.id.timelyt);
-            viewHolder.substart = view.findViewById(R.id.substart);
-            viewHolder.subend = view.findViewById(R.id.subend);
+            viewHolder.timelyt = convertView.findViewById(R.id.timelyt);
+            viewHolder.substart = convertView.findViewById(R.id.substart);
+            viewHolder.subend = convertView.findViewById(R.id.subend);
 
-            viewHolder.contentlyt = view.findViewById(R.id.contentlyt);
-            viewHolder.subcontent = view.findViewById(R.id.subcontent);
+            viewHolder.contentlyt = convertView.findViewById(R.id.contentlyt);
+            viewHolder.subcontent = convertView.findViewById(R.id.subcontent);
 
-            viewHolder.recordlyt = view.findViewById(R.id.recordlyt);
-            viewHolder.progressBar = view.findViewById(R.id.recProgressBar);
-            viewHolder.compareBnt = view.findViewById(R.id.compareBnt);
-            viewHolder.replayBnt = view.findViewById(R.id.replayBnt);
-            viewHolder.recordBnt = view.findViewById(R.id.recordBnt);
+            viewHolder.recordlyt = convertView.findViewById(R.id.recordlyt);
+            viewHolder.progressBar = convertView.findViewById(R.id.recProgressBar);
+            viewHolder.compareBnt = convertView.findViewById(R.id.compareBnt);
+            viewHolder.replayBnt = convertView.findViewById(R.id.replayBnt);
+            viewHolder.recordBnt = convertView.findViewById(R.id.recordBnt);
 
-            view.setTag(viewHolder); //设置将数据进行缓存
+            convertView.setTag(viewHolder); //设置将数据进行缓存
         } else { //第二次访问直接读取第一次访问使存取的数据
-            view = convertView;
-            viewHolder = (ViewHolder)view.getTag();
+            viewHolder = (ViewHolder)convertView.getTag();
         }
 
         viewHolder.substart.setText(item.substart.toString());
@@ -188,7 +188,6 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
             currentView = viewHolder;
 
             viewHolder.timelyt.setVisibility(View.VISIBLE);
-            viewHolder.subcontent.setTypeface(Typeface.DEFAULT, Typeface.NORMAL);
             viewHolder.subcontent.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
 
             viewHolder.recordlyt.setOnClickListener(noneOnClickListener);
@@ -199,6 +198,8 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
             if (context.currentWorkMode == context.WORKMODE_REPEAT) {
                 viewHolder.recordlyt.setVisibility(View.VISIBLE);
             }
+
+            updateStatus(STATUS_NOTHING);
         } else {
             viewHolder.timelyt.setVisibility(View.GONE);
             viewHolder.recordlyt.setVisibility(View.GONE);
@@ -211,7 +212,7 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
             viewHolder.subcontent.setTextColor(context.getColor(R.color.black));
         }
 
-        return view;
+        return convertView;
     }
 
     private View.OnClickListener noneOnClickListener = new View.OnClickListener() {

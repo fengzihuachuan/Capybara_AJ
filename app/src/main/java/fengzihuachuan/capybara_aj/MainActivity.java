@@ -1,7 +1,6 @@
 package fengzihuachuan.capybara_aj;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -84,6 +83,9 @@ public class MainActivity extends AppCompatActivity {
 
         new Handler().postDelayed(new Runnable() {
             public void run() {
+                if (alertDialogFileSelect != null) {
+                    alertDialogFileSelect.dismiss();
+                }
                 Files.init();
                 resumeLast();
             }
@@ -138,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                 Dubbing.go(this);
             }
 
-            SubtitleListAdapter.workmodeChange();
+            SubtitleListAdapter.workModeChange();
         }
 
         return super.onOptionsItemSelected(item);
@@ -161,28 +163,6 @@ public class MainActivity extends AppCompatActivity {
     private View.OnClickListener openOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            /*
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("请选择文件");
-
-            final String[] filesShow =  new String[Files.size()];
-            for (int i = 0; i < Files.size(); i++) {
-                String t = Preferences.get(Files.get(i).baseName, 0, 0) + "  -  " + Files.get(i).baseName + "\n" + Files.get(i).videoSubDir;
-                filesShow[i] = t.substring(0, Math.min(t.length(), 64)) + "...";
-            }
-
-            builder.setSingleChoiceItems(filesShow, -1, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    int ret = loadCurrent(null, which, 0);
-                    if (ret != 0) {
-                        Toast.makeText(getApplicationContext(), "Files.VideoFiles NULL", Toast.LENGTH_LONG).show();
-                    }
-                    dialog.dismiss();
-                }
-            });
-            builder.show();
-             */
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             View filelist = getLayoutInflater().inflate(R.layout.file_selector, null);
             ListView listView = filelist.findViewById(R.id.fileslistview);
@@ -230,8 +210,7 @@ public class MainActivity extends AppCompatActivity {
         AudioRecorder.init(MainActivity.this);
         AudioPlayer.init(MainActivity.this);
         videoPlayer.init(MainActivity.this, findViewById(R.id.videosfc));
-        SubtitleListAdapter.initSubtitle(MainActivity.this, findViewById(R.id.subtitlelist), videoPlayer);
-        SubtitleListAdapter.subtitleSelected(pos);
+        SubtitleListAdapter.initSubtitle(MainActivity.this, findViewById(R.id.subtitlelist), videoPlayer, pos);
 
         Preferences.set(baseName);
         Preferences.set(baseName, Subtitle.getRecSum(), Subtitle.size());

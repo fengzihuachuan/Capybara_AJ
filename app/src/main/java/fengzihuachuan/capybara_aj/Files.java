@@ -17,13 +17,15 @@ public class Files {
     static String TAG = "FileUtils";
 
     static String RootDirName = "CPBRs";
+    static String RecDir = "recordings";
+    static String DubDir = "dubbing";
 
     static String resRootDir;
     static String recordDir;
     static String dubDir;
 
     private static ArrayList<Info> fileslist = new ArrayList<>();
-    static Info currentLoad;
+    private static Info currentLoad = null;
 
     public static final int GET_BASENAME = 0;
     public static final int GET_VIDEOPATH = 1;
@@ -42,11 +44,11 @@ public class Files {
             File f = new File(resRootDir);
             f.mkdirs();
 
-            recordDir = resRootDir + "recordings/";
+            recordDir = resRootDir + RecDir + "/";
             f = new File(recordDir);
             f.mkdirs();
 
-            dubDir = resRootDir + "dubbing/";
+            dubDir = resRootDir + DubDir + "/";
             f = new File(dubDir);
             f.mkdirs();
 
@@ -65,28 +67,29 @@ public class Files {
                     String videoDir = file.toString().substring(0, file.toString().lastIndexOf('/') + 1);
                     String videoSubdir = videoDir.substring(videoDir.lastIndexOf(RootDirName) + RootDirName.length() + 1, videoDir.length());
                     String videoName = file.toString().substring(file.toString().lastIndexOf('/') + 1, file.toString().length());
+
+                    if (videoSubdir.equals(RecDir) || videoSubdir.equals(DubDir)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
                     if (videoName.endsWith(".mp4") || videoName.endsWith(".mkv") ||
                             videoName.endsWith(".avi") || videoName.endsWith(".webm")) {
 
                         String baseName = videoName.substring(0, videoName.lastIndexOf('.'));
 
                         String sbtName = null;
-                        String t;
-                        File sf = null;
+                        String t1 = baseName + ".srt";
+                        String t2 = baseName + ".ass";
+                        File tf1 = new File(videoDir + t1);
+                        File tf2 = new File(videoDir + t2);
+                        if (tf1.exists() || tf2.exists()) {
+                            if (tf2.exists())
+                                sbtName = t2;
+                            if (tf1.exists())
+                                sbtName = t1;
 
-                        t = baseName + ".srt";
-                        sf = new File(videoDir + t);
-                        if (sf.exists()) {
-                            sbtName = t;
+                            unsortflist.add(new Info(videoDir, videoSubdir, baseName, videoName, sbtName, Preferences.get(baseName, 0, 0)));
                         }
-
-                        t = baseName + ".ass";
-                        sf = new File(videoDir + t);
-                        if (sf.exists()) {
-                            sbtName = t;
-                        }
-
-                        unsortflist.add(new Info(videoDir, videoSubdir, baseName, videoName, sbtName, Preferences.get(baseName, 0, 0)));
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -151,6 +154,9 @@ public class Files {
     }
 
     public static String getCurrInfo(int type) {
+        if (currentLoad == null)
+            return null;
+
         if (type == GET_VIDEOPATH) {
             return currentLoad.videoDir + currentLoad.videoName;
         } else if (type == GET_SBTPATH) {
@@ -163,6 +169,9 @@ public class Files {
     }
 
     public static String getCurrInfo(int type, int id) {
+        if (currentLoad == null)
+            return null;
+
         if (type == GET_RECPATH) {
             return recordDir + currentLoad.baseName + "_" + (id+1) + ".aac";
         } else {
