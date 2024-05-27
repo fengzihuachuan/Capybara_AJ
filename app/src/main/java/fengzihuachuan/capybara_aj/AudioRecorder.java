@@ -50,16 +50,16 @@ public class AudioRecorder {
                         isRecording = true;
                         long start = System.currentTimeMillis();
                         while (isRecording) {
+                            Message msg = new Message();
+                            msg.what = SubtitleListAdapter.MSGTYPE_PROGRESS;
+
                             if (System.currentTimeMillis() - start > period) {
-                                Message msg = new Message();
-                                msg.what = SubtitleListAdapter.MSGTYPE_PROGRESS;
                                 msg.arg1 = (int) (1000);
                                 SubtitleListAdapter.listHandler.sendMessage(msg);
+
                                 isRecording = false;
                                 break;
                             } else {
-                                Message msg = new Message();
-                                msg.what = SubtitleListAdapter.MSGTYPE_PROGRESS;
                                 msg.arg1 = (int) ((System.currentTimeMillis() - start) * 1000 / period);
                                 SubtitleListAdapter.listHandler.sendMessage(msg);
 

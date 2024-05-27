@@ -199,7 +199,9 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
                 viewHolder.recordlyt.setVisibility(View.VISIBLE);
             }
 
-            updateStatus(STATUS_NOTHING);
+            if (currentStatus == STATUS_NOTHING) {
+                updateStatus(STATUS_NOTHING);
+            }
         } else {
             viewHolder.timelyt.setVisibility(View.GONE);
             viewHolder.recordlyt.setVisibility(View.GONE);
@@ -256,7 +258,6 @@ public class SubtitleListAdapter extends ArrayAdapter<Subtitle.Item> {
 
     private static void updateStatus(int s) {
         currentStatus = s;
-
         //Log.e(TAG, "updateStatus = " + s);
 
         if (s == STATUS_NOTHING) {

@@ -212,6 +212,8 @@ public class MainActivity extends AppCompatActivity {
         videoPlayer.init(MainActivity.this, findViewById(R.id.videosfc));
         SubtitleListAdapter.initSubtitle(MainActivity.this, findViewById(R.id.subtitlelist), videoPlayer, pos);
 
+        currentWorkMode = WORKMODE_REPEAT;
+
         Preferences.set(baseName);
         Preferences.set(baseName, Subtitle.getRecSum(), Subtitle.size());
         return 0;
